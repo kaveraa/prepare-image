@@ -1,0 +1,74 @@
+{
+  "name": "@kaveraa/prepare-image",
+  "version": "1.0.0",
+  "description": "Turn the photo someone just picked into an image you can upload: HEIC converted, orientation applied, resized, and location metadata removed.",
+  "keywords": [
+    "image",
+    "upload",
+    "heic",
+    "exif",
+    "orientation",
+    "resize",
+    "compress",
+    "webp",
+    "privacy",
+    "gps",
+    "browser"
+  ],
+  "homepage": "https://github.com/kaveraa/prepare-image#readme",
+  "bugs": {
+    "url": "https://github.com/kaveraa/prepare-image/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaveraa/prepare-image.git"
+  },
+  "license": "MIT",
+  "author": "Augustin Kavera (https://github.com/kaveraa)",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "README.en.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --project unit",
+    "test:browser": "vitest run --project browser",
+    "test:all": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test:all && npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@vitest/browser": "^5.0.2",
+    "@vitest/browser-playwright": "^5.0.2",
+    "playwright": "^1.50.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.2"
+  }
+}

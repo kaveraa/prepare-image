@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="440" viewBox="0 0 1280 440" font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1220"/><stop offset="1" stop-color="#16233A"/>
+    </linearGradient>
+    <clipPath id="card2"><rect width="1280" height="440" rx="24"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#card2)">
+    <rect width="1280" height="440" fill="url(#bg2)"/>
+    <circle cx="60" cy="410" r="180" fill="#38bdf8" opacity="0.07"/>
+    <circle cx="1240" cy="-30" r="150" fill="#818cf8" opacity="0.08"/>
+  </g>
+
+  <!-- Objectif -->
+  <g transform="translate(80,84)">
+    <circle cx="44" cy="44" r="40" fill="none" stroke="#38bdf8" stroke-width="6"/>
+    <circle cx="44" cy="44" r="17" fill="none" stroke="#38bdf8" stroke-width="5"/>
+    <path d="M44 4 L44 24 M84 44 L64 44 M44 84 L44 64 M4 44 L24 44" stroke="#38bdf8" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <text x="184" y="132" font-size="54" font-weight="700" fill="#f8fafc">Prepare Image</text>
+  <text x="80" y="228" font-size="24" fill="#94a3b8">Le fichier que la personne vient de choisir,</text>
+  <text x="80" y="262" font-size="24" fill="#94a3b8">rendu envoyable. En un appel.</text>
+
+  <g font-size="18" font-weight="600" text-anchor="middle">
+    <rect x="80" y="300" width="112" height="40" rx="20" fill="#0EA5E9" opacity="0.16"/>
+    <text x="136" y="326" fill="#7DD3FC">HEIC</text>
+    <rect x="202" y="300" width="146" height="40" rx="20" fill="#0EA5E9" opacity="0.16"/>
+    <text x="275" y="326" fill="#7DD3FC">Rotation</text>
+    <rect x="358" y="300" width="166" height="40" rx="20" fill="#0EA5E9" opacity="0.16"/>
+    <text x="441" y="326" fill="#7DD3FC">Sans GPS</text>
+  </g>
+  <text x="80" y="394" font-size="20" fill="#64748b" font-family="Consolas, 'Courier New', monospace">npm install @kaveraa/prepare-image</text>
+
+  <g>
+    <rect x="600" y="60" width="616" height="320" rx="16" fill="#0B1220" stroke="#38bdf8" stroke-opacity="0.35" stroke-width="2"/>
+    <circle cx="630" cy="90" r="7" fill="#FF5F57"/><circle cx="654" cy="90" r="7" fill="#FEBC2E"/><circle cx="678" cy="90" r="7" fill="#28C840"/>
+    <text x="1188" y="96" font-size="15" fill="#6B7F90" text-anchor="end">upload.ts</text>
+
+    <g font-family="Consolas, 'Courier New', monospace" font-size="20">
+      <text x="628" y="146"><tspan fill="#C792EA">const</tspan><tspan fill="#E6EDF3"> ready = </tspan><tspan fill="#C792EA">await</tspan><tspan fill="#E6EDF3"> </tspan><tspan fill="#38BDF8">prepareImage</tspan><tspan fill="#E6EDF3">(file, {</tspan></text>
+      <text x="628" y="178"><tspan fill="#E6EDF3">  maxSize: </tspan><tspan fill="#F4C27A">2000</tspan><tspan fill="#E6EDF3">,</tspan></text>
+      <text x="628" y="210"><tspan fill="#E6EDF3">  format: </tspan><tspan fill="#F4C27A">'webp'</tspan><tspan fill="#E6EDF3">,</tspan></text>
+      <text x="628" y="242"><tspan fill="#E6EDF3">})</tspan></text>
+
+      <text x="628" y="300"><tspan fill="#6B7F90">// IMG_4821.HEIC  4.2 MB  sideways  GPS</tspan></text>
+      <text x="628" y="332"><tspan fill="#8BE9A0">// photo.webp</tspan><tspan fill="#6B7F90">      280 KB  upright   clean</tspan></text>
+    </g>
+  </g>
+</svg>
