@@ -43,7 +43,7 @@ npm run build
 - **Le navigateur reste derrière une interface.** Le reste du paquet ne touche jamais au canevas : c'est ce qui permet de tout tester sous Node. Si vous ajoutez une opération d'image, ajoutez-la à `Imaging`, pas ailleurs.
 - **Aucune dépendance.** Le paquet n'en a pas, et le décodeur HEIC est fourni par l'application, pas par nous : c'est ce qui garde l'installation légère pour ceux qui n'en ont pas besoin.
 - **Tests** : toute correction ou nouveauté est accompagnée d'un test.
-- **Documentation** : mettez à jour `README.md` (français) **et** `README.en.md` (anglais simple), ainsi que le `CHANGELOG.md` (section en haut, en français et en anglais).
+- **Documentation** : mettez à jour `README.md` (anglais simple) **et** `README.fr.md` (français), ainsi que le `CHANGELOG.md` (section en haut, en français et en anglais).
 - **Commits** : en anglais simple, compréhensible par un débutant. Phrases courtes, pas de jargon.
 - **Caractères** : uniquement des caractères du clavier dans les fichiers et les commits : `-` (pas de tiret long), `"` (pas de guillemets français), `->` (pas de flèche), pas d'emoji ni d'icône. Les lettres accentuées du français sont acceptées.
 
@@ -98,7 +98,7 @@ npm run build
 - **The browser stays behind one interface.** The rest of the package never touches the canvas: that is what makes everything testable under Node. If you add an image operation, add it to `Imaging`, nowhere else.
 - **No dependency.** The package has none, and the HEIC decoder is given by the application, not by us: that is what keeps the install small for those who do not need it.
 - **Tests**: every fix or new feature comes with a test.
-- **Documentation**: update `README.md` (French) **and** `README.en.md` (simple English), and the `CHANGELOG.md` (section at the top, in French and English).
+- **Documentation**: update `README.md` (simple English) **and** `README.fr.md` (French), and the `CHANGELOG.md` (section at the top, in French and English).
 - **Commits**: in simple English, easy to read for a beginner. Short sentences, no jargon.
 - **Characters**: only keyboard characters in files and commits: `-` (no long dash), `"` (no French quotes), `->` (no arrow), no emoji or icon. French accented letters are fine.
 
