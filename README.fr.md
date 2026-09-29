@@ -4,7 +4,7 @@
 
 [![Tests](https://github.com/kaveraa/prepare-image/actions/workflows/tests.yml/badge.svg)](https://github.com/kaveraa/prepare-image/actions/workflows/tests.yml)
 [![npm](https://img.shields.io/npm/v/@kaveraa/prepare-image.svg)](https://www.npmjs.com/package/@kaveraa/prepare-image)
-[![Taille](https://img.shields.io/bundlephobia/minzip/@kaveraa/prepare-image.svg)](https://bundlephobia.com/package/@kaveraa/prepare-image)
+[![Téléchargements](https://img.shields.io/npm/dm/@kaveraa/prepare-image.svg)](https://www.npmjs.com/package/@kaveraa/prepare-image)
 [![Licence](https://img.shields.io/github/license/kaveraa/prepare-image.svg)](https://github.com/kaveraa/prepare-image/blob/main/LICENSE)
 
 [English](https://github.com/kaveraa/prepare-image/blob/main/README.md) - **Français**
