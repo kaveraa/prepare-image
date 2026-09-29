@@ -4,12 +4,12 @@
 
 [![Tests](https://github.com/kaveraa/prepare-image/actions/workflows/tests.yml/badge.svg)](https://github.com/kaveraa/prepare-image/actions/workflows/tests.yml)
 [![npm](https://img.shields.io/npm/v/@kaveraa/prepare-image.svg)](https://www.npmjs.com/package/@kaveraa/prepare-image)
-[![Taille](https://img.shields.io/bundlephobia/minzip/@kaveraa/prepare-image.svg)](https://bundlephobia.com/package/@kaveraa/prepare-image)
-[![Licence](https://img.shields.io/github/license/kaveraa/prepare-image.svg)](https://github.com/kaveraa/prepare-image/blob/main/LICENSE)
+[![Size](https://img.shields.io/bundlephobia/minzip/@kaveraa/prepare-image.svg)](https://bundlephobia.com/package/@kaveraa/prepare-image)
+[![License](https://img.shields.io/github/license/kaveraa/prepare-image.svg)](https://github.com/kaveraa/prepare-image/blob/main/LICENSE)
 
-**Français** - [English](https://github.com/kaveraa/prepare-image/blob/main/README.en.md)
+**English** - [Français](https://github.com/kaveraa/prepare-image/blob/main/README.fr.md)
 
-Entre le fichier qu'une personne choisit dans un formulaire et l'image que vous voulez stocker, il y a un gouffre : 4 Mo au lieu de 300 Ko, une photo couchée sur le côté, un HEIC que Chrome et Firefox ne savent pas afficher, et les **coordonnées GPS du lieu de la prise de vue** - souvent le domicile - embarquées dans le fichier.
+Between the file someone picks in a form and the image you want to store, there is a gap: 4 MB instead of 300 KB, a photo lying on its side, a HEIC that Chrome and Firefox cannot show, and the **GPS position of the place the photo was taken** - often a home address - carried inside the file.
 
 ```js
 import { prepareImage } from '@kaveraa/prepare-image'
@@ -19,43 +19,43 @@ const ready = await prepareImage(file, { maxSize: 2000, format: 'webp' })
 await fetch('/api/photos', { method: 'POST', body: formDataWith(ready.file) })
 ```
 
-- **Un seul appel** pour ce qui demande d'habitude trois bibliothèques.
-- **Les photos d'iPhone** : le HEIC est converti quand le navigateur ne sait pas le lire, et seulement là.
-- **Toujours droite** : l'orientation notée par l'appareil est appliquée aux pixels, puis oubliée.
-- **La position disparaît** : aucune métadonnée ne sort, ni GPS, ni modèle d'appareil, ni date.
-- **Sans perte inutile** : si rien n'a besoin de changer, les pixels ne sont pas réencodés, seules les métadonnées sont retirées.
-- **Aucune dépendance**, écrit en TypeScript, et le même code fonctionne dans un Web Worker.
+- **One call** for what usually takes three libraries.
+- **iPhone photos**: HEIC is converted when the browser cannot read it, and only then.
+- **Always upright**: the orientation recorded by the camera is applied to the pixels, then forgotten.
+- **The location is gone**: no metadata comes out, no GPS, no camera model, no date.
+- **No needless loss**: when nothing has to change, the pixels are not re-encoded, only the metadata is removed.
+- **No dependency**, written in TypeScript, and the same code runs inside a Web Worker.
 
 ---
 
-## Sommaire
+## Table of contents
 
-- [Le problème](#le-problème)
+- [The problem](#the-problem)
 - [Installation](#installation)
-- [Utilisation](#utilisation)
-- [Les photos d'iPhone](#les-photos-diphone)
-- [Ce qui est retiré du fichier](#ce-qui-est-retiré-du-fichier)
-- [Ce que vous récupérez](#ce-que-vous-récupérez)
-- [Toutes les options](#toutes-les-options)
-- [Tenir dans un poids](#tenir-dans-un-poids)
-- [Dans un Web Worker](#dans-un-web-worker)
-- [Les erreurs](#les-erreurs)
-- [Remplacer les opérations d'image](#remplacer-les-opérations-dimage)
-- [Ce que ce paquet ne fait pas](#ce-que-ce-paquet-ne-fait-pas)
-- [Développement](#développement)
+- [Usage](#usage)
+- [iPhone photos](#iphone-photos)
+- [What is removed from the file](#what-is-removed-from-the-file)
+- [What you get back](#what-you-get-back)
+- [All the options](#all-the-options)
+- [Fitting a size budget](#fitting-a-size-budget)
+- [Inside a Web Worker](#inside-a-web-worker)
+- [Errors](#errors)
+- [Replacing the image operations](#replacing-the-image-operations)
+- [What this package does not do](#what-this-package-does-not-do)
+- [Development](#development)
 
-## Le problème
+## The problem
 
-Un formulaire avec un champ photo, c'est trois lignes de HTML. Ce qui suit l'est beaucoup moins :
+A form with a photo field is three lines of HTML. What comes after is a lot less so:
 
-| Ce que le téléphone donne | Ce que vous vouliez |
+| What the phone hands you | What you wanted |
 |---|---|
-| `IMG_4821.HEIC`, illisible par Chrome et Firefox | une image que tout le monde affiche |
-| 4,2 Mo | 280 Ko |
-| couchée sur le côté, parce que l'orientation est notée à part | droite |
-| `GPS 48.8566, 2.3522` | rien |
+| `IMG_4821.HEIC`, unreadable by Chrome and Firefox | an image everybody can show |
+| 4.2 MB | 280 KB |
+| lying on its side, because the orientation is recorded apart | upright |
+| `GPS 48.8566, 2.3522` | nothing |
 
-Aujourd'hui on assemble `heic2any`, `browser-image-compression` et un bout de lecture EXIF. Les plus téléchargées de ces bibliothèques n'ont pas été publiées depuis 2022 ou 2023. Et la partie qui compte le plus pour les personnes qui utilisent votre site - retirer leur position - est presque toujours oubliée.
+Today people assemble `heic2any`, `browser-image-compression` and a piece of EXIF reading. The most downloaded of these libraries have not been published since 2022 or 2023. And the part that matters most to the people using your site - removing their location - is almost always forgotten.
 
 ## Installation
 
@@ -63,7 +63,7 @@ Aujourd'hui on assemble `heic2any`, `browser-image-compression` et un bout de le
 npm install @kaveraa/prepare-image
 ```
 
-## Utilisation
+## Usage
 
 ```js
 import { prepareImage } from '@kaveraa/prepare-image'
@@ -90,19 +90,19 @@ input.addEventListener('change', async () => {
 })
 ```
 
-Sans option, l'image est ramenée à 2000 pixels sur son côté le plus long, convertie en WebP quand le navigateur sait l'écrire, et débarrassée de ses métadonnées.
+With no option, the image is brought down to 2000 pixels on its longest edge, turned into WebP when the browser can write it, and freed of its metadata.
 
-## Les photos d'iPhone
+## iPhone photos
 
-Depuis 2017, un iPhone enregistre ses photos en HEIC. Safari sait les lire, Chrome et Firefox non. Décoder ce format demande un décodeur lourd, que la plupart des applications n'ont aucune raison de charger.
+Since 2017, an iPhone saves its photos as HEIC. Safari can read them, Chrome and Firefox cannot. Decoding that format takes a heavy decoder, which most applications have no reason to load.
 
-Ce paquet fait donc les choses dans cet ordre : il demande d'abord au navigateur, et ne se tourne vers votre décodeur que si celui-ci échoue. Sur Safari, le décodeur n'est jamais chargé.
+So the package works in this order: it asks the browser first, and turns to your decoder only if that fails. On Safari the decoder is never loaded.
 
 ```js
 import { looksLikeHeic, prepareImage } from '@kaveraa/prepare-image'
 
 const ready = await prepareImage(file, {
-  // Charge le decodeur seulement quand il sert vraiment
+  // Loads the decoder only when it is really needed
   decodeHeic: async (blob) => {
     const { heicTo } = await import('heic-to')
 
@@ -111,72 +111,72 @@ const ready = await prepareImage(file, {
 })
 ```
 
-`looksLikeHeic(file)` ne lit que les premiers octets du fichier, si vous préférez décider avant d'appeler.
+`looksLikeHeic(file)` reads the first bytes of the file only, if you would rather decide before calling.
 
-Le paquet exporte aussi `sniff(bytes)`, qui donne le vrai format d'un fichier d'après ses octets et non d'après son nom ni le type annoncé par le navigateur - un HEIC arrive souvent avec un type vide, et un fichier renommé garde ses octets d'origine.
+The package also exports `sniff(bytes)`, which gives the real format of a file from its bytes and not from its name or the type the browser reports - a HEIC often arrives with an empty type, and a renamed file keeps its original bytes.
 
-Sans `decodeHeic`, un HEIC que le navigateur ne sait pas lire lève une erreur claire plutôt que d'échouer en silence.
+Without `decodeHeic`, a HEIC the browser cannot read throws a clear error instead of failing quietly.
 
-## Ce qui est retiré du fichier
+## What is removed from the file
 
-Tout. Position GPS, modèle et numéro de série de l'appareil, date et heure, réglages de prise de vue, vignette, commentaires, XMP.
+Everything. GPS position, camera model and serial number, date and time, shooting settings, thumbnail, comments, XMP.
 
-Deux chemins, selon ce qu'il y a à faire :
+Two paths, depending on what has to be done:
 
-- **Il y a autre chose à faire** (redimensionner, tourner, convertir) : l'image est réencodée, et un réencodage ne recopie aucune métadonnée. Rien ne survit.
-- **Il n'y a rien d'autre à faire** : les pixels ne sont pas touchés. Les blocs de métadonnées sont retirés du fichier tels quels, sans réencodage, donc **sans aucune perte de qualité**.
+- **Something else has to be done** (resize, rotate, convert): the image is re-encoded, and a re-encode copies no metadata. Nothing survives.
+- **Nothing else has to be done**: the pixels are left alone. The metadata blocks are removed from the file as it is, with no re-encode, so **with no loss of quality at all**.
 
-Pour forcer le réencodage dans tous les cas, mettez `alwaysReencode: true`.
+To force a re-encode in every case, set `alwaysReencode: true`.
 
-## Ce que vous récupérez
+## What you get back
 
 ```ts
 interface PreparedImage {
-  file: File          // pret a partir dans un FormData
+  file: File          // ready to go into a FormData
   format: 'webp' | 'jpeg' | 'png'
   width: number
   height: number
   bytes: number
 
-  source: {           // l'image telle qu'elle est arrivee
+  source: {           // the image as it arrived
     type: string
     bytes: number
-    width: number     // dimensions une fois remise droite
+    width: number     // size once turned upright
     height: number
     orientation: number
   }
 
-  changed: Change[]   // ce qui a ete fait, dans l'ordre
+  changed: Change[]   // what was done, in order
 }
 ```
 
-`changed` sert à expliquer, à journaliser, ou à ne rien dire du tout quand la liste est vide.
+`changed` is there to explain, to log, or to say nothing at all when the list is empty.
 
-## Toutes les options
+## All the options
 
-| Option | Défaut | Rôle |
+| Option | Default | Role |
 |---|---|---|
-| `maxSize` | `2000` | Côté le plus long, en pixels. L'image n'est jamais agrandie |
-| `format` | `'auto'` | `'webp'`, `'jpeg'`, `'png'`, ou `'auto'` : WebP dès que le navigateur sait l'écrire |
-| `quality` | `0.82` | De 0 à 1. Sans effet sur le PNG |
-| `maxBytes` | - | Poids visé. La qualité descend par paliers pour s'en approcher |
-| `background` | `'#ffffff'` | Couleur posée sous la transparence quand la sortie est un JPEG |
-| `alwaysReencode` | `false` | Réencoder même quand rien n'a besoin de changer |
-| `decodeHeic` | - | Votre décodeur HEIC, appelé seulement si le navigateur échoue |
-| `signal` | - | Un `AbortSignal` pour arrêter le traitement |
-| `imaging` | - | Remplace les opérations d'image. Voir plus bas |
+| `maxSize` | `2000` | Longest edge, in pixels. The image is never enlarged |
+| `format` | `'auto'` | `'webp'`, `'jpeg'`, `'png'`, or `'auto'`: WebP as soon as the browser can write it |
+| `quality` | `0.82` | From 0 to 1. No effect on PNG |
+| `maxBytes` | - | Size to aim for. The quality steps down to get close to it |
+| `background` | `'#ffffff'` | Colour laid under transparency when the output is a JPEG |
+| `alwaysReencode` | `false` | Re-encode even when nothing has to change |
+| `decodeHeic` | - | Your HEIC decoder, called only if the browser fails |
+| `signal` | - | An `AbortSignal` to stop the work |
+| `imaging` | - | Replaces the image operations. See below |
 
-## Tenir dans un poids
+## Fitting a size budget
 
 ```js
 const ready = await prepareImage(file, { maxSize: 1600, maxBytes: 300 * 1024 })
 ```
 
-La qualité est abaissée par paliers jusqu'à tenir dans le budget, sans jamais descendre sous un seuil où l'image deviendrait laide. Ce n'est pas une garantie : une photo très détaillée peut rester au-dessus. Vérifiez `ready.bytes` si le poids est une contrainte dure.
+The quality steps down until it fits the budget, without ever going under a level where the image would turn ugly. This is not a promise: a very detailed photo can stay above. Check `ready.bytes` if the size is a hard limit.
 
-## Dans un Web Worker
+## Inside a Web Worker
 
-La fonction n'utilise que des API disponibles dans un worker. Il n'y a rien à configurer : mettez-la dans le vôtre.
+The function only uses APIs a worker has. There is nothing to set up: put it in yours.
 
 ```js
 // worker.js
@@ -189,11 +189,11 @@ onmessage = async (event) => {
 }
 ```
 
-C'est utile quand vous traitez plusieurs photos d'affilée : le fil principal reste libre et la page ne se fige pas.
+This helps when you handle several photos in a row: the main thread stays free and the page does not freeze.
 
-## Les erreurs
+## Errors
 
-Toutes les erreurs du paquet sont des `PrepareImageError` et portent un `code` :
+Every error of the package is a `PrepareImageError` and carries a `code`:
 
 ```js
 import { PrepareImageError, prepareImage } from '@kaveraa/prepare-image'
@@ -202,22 +202,22 @@ try {
   await prepareImage(file)
 } catch (error) {
   if (error instanceof PrepareImageError && error.code === 'needs-decoder') {
-    // Une photo HEIC, et pas de decodeur fourni
+    // A HEIC photo, and no decoder was given
   }
 }
 ```
 
-| Code | Quand |
+| Code | When |
 |---|---|
-| `not-an-image` | Le fichier n'est pas une image reconnue |
-| `needs-decoder` | Une photo HEIC, et le navigateur ne sait pas la lire |
-| `cannot-decode` | Le navigateur n'a pas réussi à lire l'image |
-| `cannot-encode` | Le navigateur ne sait pas écrire le format demandé |
-| `aborted` | Le signal a été déclenché |
+| `not-an-image` | The file is not an image we recognise |
+| `needs-decoder` | A HEIC photo, and the browser cannot read it |
+| `cannot-decode` | The browser could not read the image |
+| `cannot-encode` | The browser cannot write the format asked for |
+| `aborted` | The signal was fired |
 
-## Remplacer les opérations d'image
+## Replacing the image operations
 
-Le paquet ne touche jamais au canevas directement : tout passe par une interface `Imaging`. C'est ce qui permet de tester la logique sans navigateur, et cela vous laisse la remplacer.
+The package never touches the canvas itself: everything goes through an `Imaging` interface. That is what makes the logic testable without a browser, and it leaves you free to replace it.
 
 ```ts
 const ready = await prepareImage(file, {
@@ -229,14 +229,14 @@ const ready = await prepareImage(file, {
 })
 ```
 
-## Ce que ce paquet ne fait pas
+## What this package does not do
 
-- **Il n'envoie rien.** Il vous rend un `File`, vous choisissez comment l'envoyer.
-- **Il ne recadre pas et ne retouche pas.** Pas de rognage, pas de filtre : d'autres outils font cela très bien.
-- **Il ne décode pas le HEIC tout seul.** Un décodeur pèse plusieurs centaines de kilo-octets : il n'a rien à faire dans un paquet que beaucoup installeront sans en avoir besoin.
-- **Il ne remplace pas une vérification côté serveur.** Tout ce qui se passe dans un navigateur peut être contourné : continuez à valider ce que vous recevez.
+- **It uploads nothing.** It hands you a `File`, you choose how to send it.
+- **It does not crop and does not retouch.** No cropping, no filters: other tools do that very well.
+- **It does not decode HEIC on its own.** A decoder weighs a few hundred kilobytes: it has no place in a package many will install without needing it.
+- **It does not replace a check on your server.** Anything happening in a browser can be worked around: keep validating what you receive.
 
-## Développement
+## Development
 
 ```bash
 git clone https://github.com/kaveraa/prepare-image.git
@@ -246,10 +246,10 @@ npx playwright install chromium
 npm run test:all
 ```
 
-La logique pure se teste sous Node, et le vrai canevas dans Chromium. Pour proposer une modification, lisez le guide [CONTRIBUTING.md](https://github.com/kaveraa/prepare-image/blob/main/CONTRIBUTING.md). Voir le [CHANGELOG](https://github.com/kaveraa/prepare-image/blob/main/CHANGELOG.md) pour l'historique des versions.
+The pure logic is tested under Node, and the real canvas in Chromium. To suggest a change, read the [CONTRIBUTING.md](https://github.com/kaveraa/prepare-image/blob/main/CONTRIBUTING.md) guide. See the [CHANGELOG](https://github.com/kaveraa/prepare-image/blob/main/CHANGELOG.md) for the history of versions.
 
-Pour signaler une faille, ouvrez une [alerte de sécurité privée](https://github.com/kaveraa/prepare-image/security/advisories/new) plutôt qu'une issue publique.
+To report a vulnerability, open a [private security advisory](https://github.com/kaveraa/prepare-image/security/advisories/new) rather than a public issue.
 
-## Licence
+## License
 
-MIT. Voir [LICENSE](https://github.com/kaveraa/prepare-image/blob/main/LICENSE).
+MIT. See [LICENSE](https://github.com/kaveraa/prepare-image/blob/main/LICENSE).
