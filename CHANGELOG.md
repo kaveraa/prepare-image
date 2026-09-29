@@ -4,6 +4,13 @@
 
 **EN** All important changes of the package are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [semantic versioning](https://semver.org/).
 
+## [1.0.1] - 2026-09-29
+
+### Documentation
+
+- **FR** Le README affiché par défaut est maintenant en anglais (`README.md`), le français est dans `README.fr.md`.
+  **EN** The default README is now in English (`README.md`), the French version is in `README.fr.md`.
+
 ## [1.0.0] - 2026-09-29
 
 ### Ajouté / Added
@@ -19,4 +26,5 @@
 - **FR** Aucune dépendance, écrit en TypeScript, fonctionne dans un Web Worker, avec `AbortSignal` et des erreurs typées.
   **EN** No dependency, written in TypeScript, runs inside a Web Worker, with `AbortSignal` and typed errors.
 
+[1.0.1]: https://github.com/kaveraa/prepare-image/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/kaveraa/prepare-image/releases/tag/v1.0.0

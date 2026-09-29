@@ -1,6 +1,6 @@
 {
   "name": "@kaveraa/prepare-image",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Turn the photo someone just picked into an image you can upload: HEIC converted, orientation applied, resized, and location metadata removed.",
   "keywords": [
     "image",
