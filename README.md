@@ -1,6 +1,6 @@
 # Prepare Image
 
-<p align="center"><img src="https://raw.githubusercontent.com/kaveraa/prepare-image/main/art/banner.svg" alt="Prepare Image" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/kaveraa/prepare-image/4057f47/art/banner.svg" alt="Prepare Image" width="100%"></p>
 
 [![Tests](https://github.com/kaveraa/prepare-image/actions/workflows/tests.yml/badge.svg)](https://github.com/kaveraa/prepare-image/actions/workflows/tests.yml)
 [![npm](https://img.shields.io/npm/v/@kaveraa/prepare-image.svg)](https://www.npmjs.com/package/@kaveraa/prepare-image)
