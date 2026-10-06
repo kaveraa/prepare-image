@@ -19,9 +19,9 @@ export interface PrepareOptions {
   maxSize?: number
 
   /**
-   * Output format. `'auto'` keeps PNG when the image has transparency,
-   * and picks WebP otherwise, with a fallback to JPEG if the browser cannot
-   * write WebP. Default: `'auto'`.
+   * Output format. `'auto'` picks WebP as soon as the browser can write it.
+   * Otherwise it keeps PNG when the image may be transparent, and JPEG for
+   * the rest. Default: `'auto'`.
    */
   format?: Format | 'auto'
 
