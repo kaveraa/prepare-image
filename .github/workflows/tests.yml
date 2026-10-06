@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Permet de relancer la suite à la main sur une branche, depuis l'onglet Actions.
+  # Lets you run the suite by hand on a branch, from the Actions tab.
   workflow_dispatch:
 
 jobs:
@@ -30,8 +30,8 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  # Le vrai canevas d'un vrai navigateur : c'est la que se verifient le
-  # decodage, la rotation, le redimensionnement et l'encodage.
+  # The real canvas of a real browser: this is where decoding, rotation,
+  # resizing and encoding are checked.
   browser:
     name: Chromium
     runs-on: ubuntu-latest
@@ -49,8 +49,8 @@ jobs:
 
       - run: npm run test:browser
 
-  # Contrôle unique exigé par la protection de la branche main :
-  # il ne passe que si tous les autres jobs ont réussi.
+  # Single check required by the protection of the main branch:
+  # it passes only if all the other jobs succeeded.
   tests-passed:
     name: All tests passed
     needs: [tests, browser]

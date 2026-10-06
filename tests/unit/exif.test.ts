@@ -80,7 +80,7 @@ describe('readMetadata on JPEG', () => {
   it('survives a file truncated in the middle of the EXIF block', () => {
     const file = jpeg({ app1: exifPayload({ orientation: 6, gps: true }) })
 
-    // Toutes les troncatures possibles : aucune exception, aucune boucle.
+    // Every possible truncation: no exception, no loop.
     for (let length = 0; length <= file.length; length += 1) {
       const cut = file.subarray(0, length)
       expect(() => readMetadata(cut, 'jpeg')).not.toThrow()
