@@ -1,35 +1,35 @@
 /**
- * Lecture des metadonnees : orientation, presence d'une position GPS, presence
- * de quoi que ce soit a retirer.
+ * Metadata reading: orientation, presence of a GPS position, presence of
+ * anything to remove.
  *
- * Regle de survie : un fichier tronque, mal forme ou hostile ne doit ni lever
- * d'exception ni faire boucler. Au moindre doute on s'arrete et on rend ce que
- * l'on a lu jusque-la.
+ * Survival rule: a truncated, malformed or hostile file must neither throw
+ * nor loop forever. At the first doubt we stop and return what we have read
+ * so far.
  */
 
 import type { Orientation } from './types'
 import type { ImageKind } from './detect'
 
 export interface Metadata {
-  /** 1 quand il n'y a rien, ou quand la valeur lue n'a pas de sens. */
+  /** 1 when there is nothing, or when the value read makes no sense. */
   orientation: Orientation
-  /** Le fichier porte-t-il une position GPS ? */
+  /** Does the file carry a GPS position? */
   hasLocation: boolean
-  /** Le fichier porte-t-il des metadonnees a retirer (EXIF, XMP, IPTC, commentaires) ? */
+  /** Does the file carry metadata to remove (EXIF, XMP, IPTC, comments)? */
   hasMetadata: boolean
 }
 
-/** Balise TIFF de l'orientation. */
+/** TIFF tag of the orientation. */
 const TAG_ORIENTATION = 0x0112
-/** Balise TIFF du pointeur vers l'IFD GPS : sa presence suffit a dire "ce fichier situe la photo". */
+/** TIFF tag of the pointer to the GPS IFD: its presence is enough to say "this file locates the photo". */
 const TAG_GPS_IFD = 0x8825
 
-/** Rien a signaler. Fabrique un objet neuf a chaque fois : l'appelant peut le garder. */
+/** Nothing to report. Builds a new object each time: the caller may keep it. */
 function empty(): Metadata {
   return { orientation: 1, hasLocation: false, hasMetadata: false }
 }
 
-/** Lit un octet ; rend 0 au-dela de la fin. Toutes les lectures passent par la. */
+/** Reads one byte; returns 0 past the end. Every read goes through here. */
 function at(bytes: Uint8Array, offset: number): number {
   const value = bytes[offset]
   return value === undefined ? 0 : value
@@ -62,7 +62,7 @@ function matches(bytes: Uint8Array, offset: number, text: string): boolean {
   return true
 }
 
-/** Ramene a 1 tout ce qui n'est pas une orientation valable (0, 9, 42, ...). */
+/** Maps anything that is not a valid orientation (0, 9, 42, ...) to 1. */
 function toOrientation(value: number): Orientation {
   switch (value) {
     case 1:
@@ -96,8 +96,8 @@ function noTiff(): TiffReading {
 }
 
 /**
- * Lit l'IFD0 d'un bloc TIFF. `start` designe les deux octets de boutisme
- * (`II` ou `MM`), `end` la borne a ne pas depasser.
+ * Reads the IFD0 of a TIFF block. `start` points to the two byte-order bytes
+ * (`II` or `MM`), `end` is the limit not to cross.
  */
 function readTiff(bytes: Uint8Array, start: number, end: number): TiffReading {
   const limit = Math.min(end, bytes.length)
@@ -111,7 +111,7 @@ function readTiff(bytes: Uint8Array, start: number, end: number): TiffReading {
   if (u16(bytes, start + 2, little) !== 42) return noTiff()
 
   const ifdOffset = u32(bytes, start + 4, little)
-  // L'IFD0 vient forcement apres l'en-tete de 8 octets.
+  // The IFD0 always comes after the 8-byte header.
   if (ifdOffset < 8) return noTiff()
   const ifd = start + ifdOffset
   if (ifd + 2 > limit) return noTiff()
@@ -121,12 +121,12 @@ function readTiff(bytes: Uint8Array, start: number, end: number): TiffReading {
   let hasLocation = false
   for (let i = 0; i < count; i += 1) {
     const entry = ifd + 2 + i * 12
-    // Entree a cheval sur la fin : le fichier est tronque, on s'arrete la.
+    // Entry crossing the end: the file is truncated, we stop here.
     if (entry + 12 > limit) break
     const tag = u16(bytes, entry, little)
     if (tag === TAG_ORIENTATION) {
-      // SHORT (3) ou LONG (4) : dans les deux cas la valeur tient dans les
-      // quatre octets de l'entree, il n'y a pas d'indirection a suivre.
+      // SHORT (3) or LONG (4): in both cases the value fits in the four
+      // bytes of the entry, there is no pointer to follow.
       const type = u16(bytes, entry + 2, little)
       const raw = type === 4 ? u32(bytes, entry + 8, little) : u16(bytes, entry + 8, little)
       orientation = toOrientation(raw)
@@ -137,7 +137,7 @@ function readTiff(bytes: Uint8Array, start: number, end: number): TiffReading {
   return { orientation, hasLocation }
 }
 
-/** Le bloc EXIF d'un JPEG, d'un PNG ou d'un WebP commence parfois par `Exif\0\0`. */
+/** The EXIF block of a JPEG, a PNG or a WebP sometimes starts with `Exif\0\0`. */
 function tiffStart(bytes: Uint8Array, offset: number): number {
   return matches(bytes, offset, 'Exif\0\0') ? offset + 6 : offset
 }
@@ -152,33 +152,33 @@ function readJpeg(bytes: Uint8Array): Metadata {
   let offset = 2
 
   while (offset + 2 <= length) {
-    if (at(bytes, offset) !== 0xff) break // Desynchronise : on ne sait plus ou on est.
-    // Des octets 0xFF de bourrage peuvent preceder le marqueur.
+    if (at(bytes, offset) !== 0xff) break // Out of sync: we no longer know where we are.
+    // Padding 0xFF bytes may come before the marker.
     let markerAt = offset
     while (markerAt < length && at(bytes, markerAt) === 0xff) markerAt += 1
     if (markerAt >= length) break
     const marker = at(bytes, markerAt)
 
-    // Marqueurs isoles, sans longueur.
+    // Standalone markers, without a length.
     if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
       offset = markerAt + 1
       continue
     }
-    // Fin d'image, ou debut des donnees compressees : plus rien a lire.
+    // End of image, or start of the compressed data: nothing more to read.
     if (marker === 0xd9 || marker === 0xda) break
 
     if (markerAt + 3 > length) break
     const segmentLength = u16(bytes, markerAt + 1, false)
-    // Une longueur compte ses deux propres octets : en dessous de 2 elle est fausse.
+    // A length counts its own two bytes: below 2 it is wrong.
     if (segmentLength < 2) break
     const dataStart = markerAt + 3
     const dataEnd = markerAt + 1 + segmentLength
-    // Longueur qui deborde du fichier : tronque ou menteur, on s'arrete.
+    // Length going past the file: truncated or lying, we stop.
     if (dataEnd > length) break
 
-    // APP1 a APP15 et le commentaire : c'est exactement ce que `stripMetadata` retire.
-    // L'APP0 JFIF reste, il porte la densite, ce n'est pas une metadonnee a jeter.
-    // APP2 est le profil ICC : il reste, il n'y a donc rien a nettoyer pour lui.
+    // APP1 to APP15 and the comment: exactly what `stripMetadata` removes.
+    // The APP0 JFIF stays, it carries the density, it is not metadata to drop.
+    // APP2 is the ICC profile: it stays, so there is nothing to clean for it.
     if ((marker >= 0xe1 && marker <= 0xef && marker !== 0xe2) || marker === 0xfe) hasMetadata = true
 
     if (marker === 0xe1 && matches(bytes, dataStart, 'Exif\0\0')) {
@@ -193,8 +193,8 @@ function readJpeg(bytes: Uint8Array): Metadata {
   return { orientation, hasLocation, hasMetadata }
 }
 
-// Les morceaux que stripMetadata retire : la lecture et le nettoyage doivent
-// voir exactement la meme chose, sinon on annonce un nettoyage qui n'a pas lieu.
+// The chunks that stripMetadata removes: reading and cleaning must see
+// exactly the same thing, or we would announce a cleanup that does not happen.
 const PNG_TEXT_CHUNKS = ['tEXt', 'iTXt', 'zTXt', 'tIME']
 
 function readPng(bytes: Uint8Array): Metadata {
@@ -208,7 +208,7 @@ function readPng(bytes: Uint8Array): Metadata {
 
   while (offset + 12 <= length) {
     const size = u32(bytes, offset, false)
-    // Longueur qui ne tient pas dans ce qui reste : on s'arrete.
+    // Length that does not fit in what is left: we stop.
     if (size > length - offset - 12) break
     const type = fourcc(bytes, offset + 4)
     const dataStart = offset + 8
@@ -253,7 +253,7 @@ function readWebp(bytes: Uint8Array): Metadata {
       hasMetadata = true
     }
 
-    // Les morceaux RIFF sont alignes sur un nombre pair d'octets.
+    // RIFF chunks are aligned on an even number of bytes.
     offset = dataStart + size + (size % 2)
   }
 
@@ -261,12 +261,9 @@ function readWebp(bytes: Uint8Array): Metadata {
 }
 
 /**
- * Lit ce qu'il faut savoir avant de traiter l'image : son orientation, si elle
- * dit ou la photo a ete prise, et s'il y a quelque chose a retirer. Ne leve
- * jamais : un fichier illisible rend simplement `{ orientation: 1, ... }`.
- *
  * Reads what matters before processing: orientation, whether the file says
- * where the photo was taken, and whether anything needs removing. Never throws.
+ * where the photo was taken, and whether anything needs removing. Never throws:
+ * an unreadable file simply returns `{ orientation: 1, ... }`.
  */
 export function readMetadata(bytes: Uint8Array, kind: ImageKind): Metadata {
   switch (kind) {
@@ -278,11 +275,11 @@ export function readMetadata(bytes: Uint8Array, kind: ImageKind): Metadata {
       return readWebp(bytes)
     case 'heic':
     case 'avif':
-      // On ne deroule pas tout le conteneur ISO-BMFF pour si peu : l'orientation
-      // y vit dans `irot`/`imir`, par element, et ces fichiers sortent d'appareils
-      // photo qui y mettent toujours de l'EXIF. De toute facon ils seront
-      // reencodes, donc `hasMetadata: true` sans chercher plus loin est exact
-      // en pratique et ne coute rien de faux.
+      // We do not walk the whole ISO-BMFF container for so little: there the
+      // orientation lives in `irot`/`imir`, per item, and these files come from
+      // cameras that always put EXIF in them. They will be re-encoded anyway,
+      // so `hasMetadata: true` without looking further is right in practice
+      // and costs nothing wrong.
       return { orientation: 1, hasLocation: false, hasMetadata: true }
     case 'gif':
     case 'tiff':

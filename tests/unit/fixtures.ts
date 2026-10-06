@@ -1,6 +1,6 @@
 /**
- * Petits constructeurs de fichiers, octet par octet. Plus sur qu'un binaire
- * commite, et cela documente les formats.
+ * Small file builders, byte by byte. Safer than a committed binary, and it
+ * documents the formats.
  */
 
 export function concat(parts: Uint8Array[]): Uint8Array {
@@ -39,7 +39,7 @@ export function u32(value: number, little = false): Uint8Array {
   return little ? bytes(d, c, b, a) : bytes(a, b, c, d)
 }
 
-/** CRC32 des morceaux PNG, calcule bit a bit pour rester court. */
+/** CRC32 of PNG chunks, computed bit by bit to stay short. */
 export function crc32(input: Uint8Array): number {
   let crc = 0xffffffff
   for (const byte of input) {
@@ -54,11 +54,11 @@ export function crc32(input: Uint8Array): number {
 // --- TIFF / EXIF ------------------------------------------------------------
 
 export interface TiffOptions {
-  /** `true` pour `II` (petit boutiste), `false` pour `MM`. */
+  /** `true` for `II` (little-endian), `false` for `MM`. */
   little?: boolean
-  /** Omis : pas d'entree d'orientation du tout. */
+  /** Omitted: no orientation entry at all. */
   orientation?: number
-  /** Ajoute le pointeur vers un IFD GPS. */
+  /** Adds the pointer to a GPS IFD. */
   gps?: boolean
 }
 
@@ -68,11 +68,11 @@ function entry(tag: number, type: number, count: number, value: Uint8Array, litt
   return concat([u16(tag, little), u16(type, little), u32(count, little), field])
 }
 
-/** Un bloc TIFF complet : en-tete, IFD0, et un IFD GPS quand on en demande un. */
+/** A complete TIFF block: header, IFD0, and a GPS IFD when one is asked for. */
 export function tiffBlock(options: TiffOptions = {}): Uint8Array {
   const little = options.little ?? false
   const count = (options.orientation === undefined ? 0 : 1) + (options.gps === true ? 1 : 0)
-  // En-tete (8) + compte (2) + entrees (12 chacune) + offset de l'IFD suivant (4).
+  // Header (8) + count (2) + entries (12 each) + offset of the next IFD (4).
   const gpsOffset = 8 + 2 + count * 12 + 4
 
   const entries: Uint8Array[] = []
@@ -87,12 +87,12 @@ export function tiffBlock(options: TiffOptions = {}): Uint8Array {
   const ifd0 = concat([u16(count, little), ...entries, u32(0, little)])
   if (options.gps !== true) return concat([header, ifd0])
 
-  // Un IFD GPS minimal : GPSLatitudeRef, deux caracteres ASCII.
+  // A minimal GPS IFD: GPSLatitudeRef, two ASCII characters.
   const gpsIfd = concat([u16(1, little), entry(0x0001, 2, 2, ascii('N\0'), little), u32(0, little)])
   return concat([header, ifd0, gpsIfd])
 }
 
-/** Le contenu d'un segment APP1 : le prefixe `Exif\0\0` puis le bloc TIFF. */
+/** The content of an APP1 segment: the `Exif\0\0` prefix then the TIFF block. */
 export function exifPayload(options: TiffOptions = {}): Uint8Array {
   return concat([ascii('Exif\0\0'), tiffBlock(options)])
 }
@@ -105,24 +105,24 @@ export function jpegSegment(marker: number, data: Uint8Array): Uint8Array {
 
 export const JFIF_PAYLOAD = concat([ascii('JFIF\0'), bytes(0x01, 0x02, 0x01), u16(72), u16(72), bytes(0x00, 0x00)])
 
-/** Les donnees compressees factices que l'on retrouve intactes apres nettoyage. */
+/** The fake compressed data found untouched after the cleanup. */
 export const SCAN_DATA = bytes(0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0x01, 0x02, 0x03)
 
 export interface JpegOptions {
-  /** L'APP0 JFIF, garde par le nettoyage. Present par defaut. */
+  /** The APP0 JFIF, kept by the cleanup. Present by default. */
   jfif?: boolean
-  /** Le contenu d'un segment APP1, typiquement `exifPayload(...)`. */
+  /** The content of an APP1 segment, typically `exifPayload(...)`. */
   app1?: Uint8Array
-  /** Un segment APP2 : le profil ICC, garde par le nettoyage. */
+  /** An APP2 segment: the ICC profile, kept by the cleanup. */
   app2?: Uint8Array
-  /** Un commentaire COM. */
+  /** A COM comment. */
   comment?: string
-  /** Un segment APP13 (IPTC en vrai vie). */
+  /** An APP13 segment (IPTC in real life). */
   app13?: Uint8Array
   scan?: Uint8Array
 }
 
-/** Un JPEG minimal mais complet : SOI, segments, SOS, donnees, EOI. */
+/** A minimal but complete JPEG: SOI, segments, SOS, data, EOI. */
 export function jpeg(options: JpegOptions = {}): Uint8Array {
   const parts: Uint8Array[] = [bytes(0xff, 0xd8)]
   if (options.jfif !== false) parts.push(jpegSegment(0xe0, JFIF_PAYLOAD))
@@ -130,8 +130,8 @@ export function jpeg(options: JpegOptions = {}): Uint8Array {
   if (options.app2 !== undefined) parts.push(jpegSegment(0xe2, options.app2))
   if (options.app13 !== undefined) parts.push(jpegSegment(0xed, options.app13))
   if (options.comment !== undefined) parts.push(jpegSegment(0xfe, ascii(options.comment)))
-  // Table de quantification, en-tete d'image, table de Huffman : du remplissage
-  // plausible, ce qui compte est qu'ils traversent le nettoyage intacts.
+  // Quantisation table, image header, Huffman table: plausible filler,
+  // what matters is that they go through the cleanup untouched.
   parts.push(jpegSegment(0xdb, new Uint8Array(65)))
   parts.push(jpegSegment(0xc0, concat([bytes(0x08), u16(16), u16(16), bytes(0x01, 0x01, 0x11, 0x00)])))
   parts.push(jpegSegment(0xc4, new Uint8Array(29)))
@@ -154,7 +154,7 @@ export const IHDR_DATA = concat([u32(16), u32(16), bytes(0x08, 0x02, 0x00, 0x00,
 export const IDAT_DATA = bytes(0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01)
 export const PHYS_DATA = concat([u32(2835), u32(2835), bytes(0x01)])
 
-/** Un PNG a partir d'une liste de morceaux, signature comprise. */
+/** A PNG from a list of chunks, signature included. */
 export function png(chunks: Array<[string, Uint8Array]>): Uint8Array {
   return concat([PNG_SIGNATURE, ...chunks.map(([type, data]) => pngChunk(type, data))])
 }
@@ -167,7 +167,7 @@ export function riffChunk(type: string, data: Uint8Array): Uint8Array {
   return concat(parts)
 }
 
-/** Le morceau VP8X, avec ses drapeaux EXIF (0x08) et XMP (0x04). */
+/** The VP8X chunk, with its EXIF (0x08) and XMP (0x04) flags. */
 export function vp8xData(flags: number): Uint8Array {
   return concat([bytes(flags, 0x00, 0x00, 0x00), bytes(0x0f, 0x00, 0x00, 0x0f, 0x00, 0x00)])
 }
@@ -183,7 +183,7 @@ export function isoBox(type: string, data: Uint8Array): Uint8Array {
   return concat([u32(data.length + 8), ascii(type), data])
 }
 
-/** Une boite `ftyp` : marque principale, version mineure, marques compatibles. */
+/** A `ftyp` box: major brand, minor version, compatible brands. */
 export function ftyp(major: string, compatible: string[] = []): Uint8Array {
   return isoBox('ftyp', concat([ascii(major), u32(0), ...compatible.map((brand) => ascii(brand))]))
 }

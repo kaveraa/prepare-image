@@ -1,32 +1,32 @@
 /**
- * Reconnaissance du format par les octets d'en-tete.
+ * Format detection from the header bytes.
  *
- * `file.type` ment souvent : plusieurs navigateurs annoncent un type vide pour
- * un HEIC, et un fichier renomme en `.jpg` garde ses octets d'origine. On ne
- * regarde donc ni le nom ni le type annonce, seulement le debut du fichier.
+ * `file.type` often lies: several browsers report an empty type for a HEIC,
+ * and a file renamed to `.jpg` keeps its original bytes. So we look neither
+ * at the name nor at the declared type, only at the start of the file.
  */
 
-/** Les formats que l'on sait reconnaitre. */
+/** The formats we can recognise. */
 export type ImageKind = 'jpeg' | 'png' | 'webp' | 'gif' | 'heic' | 'avif' | 'tiff' | 'bmp' | 'unknown'
 
 /**
- * Les marques ISO-BMFF de la famille HEIF. `mif1` et `msf1` sont generiques :
- * un AVIF peut les porter aussi, on ne tranche donc pas dessus tout de suite.
+ * The ISO-BMFF brands of the HEIF family. `mif1` and `msf1` are generic:
+ * an AVIF can carry them too, so we do not decide on them right away.
  */
 const HEIC_BRANDS = ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1']
 const AMBIGUOUS_BRANDS = ['mif1', 'msf1']
 const AVIF_BRANDS = ['avif', 'avis']
 
-/** Au-dela, on renonce : un en-tete sain place `ftyp` dans les toutes premieres boites. */
+/** Past this, we give up: a sane header puts `ftyp` in the very first boxes. */
 const MAX_BOXES = 8
 
-/** Lit un octet ; rend 0 au-dela de la fin, ce qui evite les tests de bornes partout. */
+/** Reads one byte; returns 0 past the end, which avoids bounds checks everywhere. */
 function at(bytes: Uint8Array, offset: number): number {
   const value = bytes[offset]
   return value === undefined ? 0 : value
 }
 
-/** La suite d'octets a cette position vaut-elle ce texte ASCII ? */
+/** Do the bytes at this position match this ASCII text? */
 function matches(bytes: Uint8Array, offset: number, text: string): boolean {
   if (offset < 0 || offset + text.length > bytes.length) return false
   for (let i = 0; i < text.length; i += 1) {
@@ -35,21 +35,21 @@ function matches(bytes: Uint8Array, offset: number, text: string): boolean {
   return true
 }
 
-/** Quatre octets lus comme du texte ASCII. Rend '' si on deborde. */
+/** Four bytes read as ASCII text. Returns '' when out of range. */
 function fourcc(bytes: Uint8Array, offset: number): string {
   if (offset < 0 || offset + 4 > bytes.length) return ''
   return String.fromCharCode(at(bytes, offset), at(bytes, offset + 1), at(bytes, offset + 2), at(bytes, offset + 3))
 }
 
-/** Entier 32 bits gros-boutiste. */
+/** Big-endian 32-bit integer. */
 function u32be(bytes: Uint8Array, offset: number): number {
   return ((at(bytes, offset) << 24) | (at(bytes, offset + 1) << 16) | (at(bytes, offset + 2) << 8) | at(bytes, offset + 3)) >>> 0
 }
 
 /**
- * Cherche la boite `ftyp` et rend les marques qu'elle porte, la principale en
- * tete. La boite n'est pas toujours la premiere : on suit les tailles annoncees
- * de boite en boite, en refusant toute taille absurde pour ne jamais boucler.
+ * Looks for the `ftyp` box and returns the brands it carries, the major one
+ * first. The box is not always the first one: we follow the declared sizes
+ * from box to box, and refuse any absurd size so we never loop forever.
  */
 function readFtypBrands(bytes: Uint8Array): string[] | null {
   let offset = 0
@@ -60,13 +60,13 @@ function readFtypBrands(bytes: Uint8Array): string[] | null {
     let header = 8
     let size = declared
     if (declared === 1) {
-      // Taille sur 64 bits. Au-dela de 4 Go on renonce : ce n'est pas une photo.
+      // 64-bit size. Past 4 GB we give up: this is not a photo.
       if (offset + 16 > bytes.length) return null
       if (u32be(bytes, offset + 8) !== 0) return null
       size = u32be(bytes, offset + 12)
       header = 16
     } else if (declared === 0) {
-      // 0 signifie "jusqu'a la fin du fichier".
+      // 0 means "up to the end of the file".
       size = bytes.length - offset
     }
     if (size < header) return null
@@ -76,7 +76,7 @@ function readFtypBrands(bytes: Uint8Array): string[] | null {
       const major = fourcc(bytes, offset + header)
       if (major === '') return null
       brands.push(major)
-      // On saute la version mineure, puis on lit les marques compatibles.
+      // Skip the minor version, then read the compatible brands.
       for (let p = offset + header + 8; p + 4 <= end; p += 4) {
         brands.push(fourcc(bytes, p))
       }
@@ -87,13 +87,13 @@ function readFtypBrands(bytes: Uint8Array): string[] | null {
   return null
 }
 
-/** AVIF, HEIC, ou rien du tout, a partir des marques de la boite `ftyp`. */
+/** AVIF, HEIC, or nothing at all, from the brands of the `ftyp` box. */
 function kindFromBrands(brands: string[]): ImageKind {
   const major = brands[0] ?? ''
   if (AVIF_BRANDS.includes(major)) return 'avif'
   if (HEIC_BRANDS.includes(major) && !AMBIGUOUS_BRANDS.includes(major)) return 'heic'
-  // Marque principale generique : ce sont les marques compatibles qui tranchent,
-  // et l'AVIF l'emporte car un HEIC ne se declare jamais compatible AVIF.
+  // Generic major brand: the compatible brands decide, and AVIF wins
+  // because a HEIC never declares itself compatible with AVIF.
   const compatible = brands.slice(1)
   if (compatible.some((brand) => AVIF_BRANDS.includes(brand))) return 'avif'
   if (compatible.some((brand) => HEIC_BRANDS.includes(brand))) return 'heic'
@@ -102,9 +102,6 @@ function kindFromBrands(brands: string[]): ImageKind {
 }
 
 /**
- * Reconnait le format par les octets d'en-tete, pas par le nom ni par le type
- * annonce. Rend `'unknown'` quand rien ne correspond.
- *
  * Recognises the format from the leading bytes, never from the name or the
  * declared type. Returns `'unknown'` when nothing matches.
  */
@@ -123,14 +120,12 @@ export function sniff(bytes: Uint8Array): ImageKind {
     if (kind !== 'unknown') return kind
   }
 
-  // En dernier, car deux octets seulement : tout le reste passe avant.
+  // Last, because only two bytes: everything else is checked before.
   if (matches(bytes, 0, 'BM')) return 'bmp'
   return 'unknown'
 }
 
 /**
- * Le type MIME correspondant, ou `null` pour `'unknown'`.
- *
  * The matching MIME type, or `null` for `'unknown'`.
  */
 export function mimeOf(kind: ImageKind): string | null {

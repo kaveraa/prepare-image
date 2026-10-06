@@ -1,8 +1,6 @@
 /**
- * L'orientation notee par l'appareil photo doit finir dans les pixels : une
- * photo prise telephone a la verticale ressort droite, cotes echanges.
- *
- * The camera orientation must end up in the pixels.
+ * The camera orientation must end up in the pixels: a photo taken with a
+ * phone held vertically comes out upright, sides swapped.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -14,7 +12,7 @@ const imaging = createBrowserImaging()
 const RED = [255, 0, 0, 255] as const
 const BLUE = [0, 0, 255, 255] as const
 
-/** Un paysage 400x200 : moitie gauche rouge, moitie droite bleue. */
+/** A 400x200 landscape: left half red, right half blue. */
 function drawHalves(ctx: OffscreenCanvasRenderingContext2D): void {
   ctx.fillStyle = '#ff0000'
   ctx.fillRect(0, 0, 200, 200)
@@ -22,7 +20,7 @@ function drawHalves(ctx: OffscreenCanvasRenderingContext2D): void {
   ctx.fillRect(200, 0, 200, 200)
 }
 
-/** Decode, encode a la taille voulue, et rend les pixels du resultat. */
+/** Decodes, encodes at the wanted size, and returns the pixels of the result. */
 async function decodeThenRead(
   blob: Blob,
   orientation: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8,
@@ -56,13 +54,13 @@ describe('orientation', () => {
     const blob = await jpegWithOrientation(400, 200, drawHalves, 6)
     const { width, height, pixels } = await decodeThenRead(blob, 6)
 
-    // Un quart de tour : le 400x200 couche devient un 200x400 debout.
+    // A quarter turn: the 400x200 landscape becomes a 200x400 portrait.
     expect(width).toBe(200)
     expect(height).toBe(400)
     expect(pixels.width).toBe(200)
     expect(pixels.height).toBe(400)
 
-    // Sens horaire : la moitie gauche de l'origine monte en haut de l'image.
+    // Clockwise: the left half of the source goes to the top of the image.
     expect(colorDistance(pixels.average(80, 60, 40, 40), RED)).toBeLessThanOrEqual(12)
     expect(colorDistance(pixels.average(80, 300, 40, 40), BLUE)).toBeLessThanOrEqual(12)
   })
@@ -74,7 +72,7 @@ describe('orientation', () => {
     expect(width).toBe(200)
     expect(height).toBe(400)
 
-    // Sens antihoraire : la moitie gauche de l'origine descend en bas.
+    // Counter-clockwise: the left half of the source goes to the bottom.
     expect(colorDistance(pixels.average(80, 300, 40, 40), RED)).toBeLessThanOrEqual(12)
     expect(colorDistance(pixels.average(80, 60, 40, 40), BLUE)).toBeLessThanOrEqual(12)
   })
@@ -102,19 +100,17 @@ describe('orientation', () => {
 })
 
 /**
- * Le chemin de secours : un moteur qui n'honore pas
- * `imageOrientation: 'from-image'`. On simule ce moteur en refusant l'option,
- * et on part d'un png, sans orientation dans le fichier, pour que la seule
- * rotation posee soit celle que la bibliotheque calcule elle-meme.
- *
  * The fallback path: an engine that ignores `imageOrientation: 'from-image'`.
+ * We fake this engine by refusing the option, and we start from a png with no
+ * orientation in the file, so the only rotation applied is the one the
+ * library computes itself.
  */
 describe('orientation applied by hand', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  /** Refuse l'option d'orientation, laisse passer le reste. */
+  /** Refuses the orientation option, lets the rest through. */
   function refuseImageOrientation(): void {
     const original = globalThis.createImageBitmap.bind(globalThis)
     vi.stubGlobal('createImageBitmap', (source: ImageBitmapSource, options?: ImageBitmapOptions) => {
@@ -135,9 +131,9 @@ describe('orientation applied by hand', () => {
   type Quadrant = keyof typeof QUADRANTS
 
   /**
-   * Pour chaque orientation, les quatre quadrants attendus une fois l'image
-   * droite, dans l'ordre haut-gauche, haut-droit, bas-gauche, bas-droit.
-   * La source est rouge / bleu en haut, vert / jaune en bas.
+   * For each orientation, the four quadrants expected once the image is
+   * upright, in the order top-left, top-right, bottom-left, bottom-right.
+   * The source is red / blue at the top, green / yellow at the bottom.
    */
   const EXPECTED: Record<number, readonly [Quadrant, Quadrant, Quadrant, Quadrant]> = {
     1: ['red', 'blue', 'green', 'yellow'],

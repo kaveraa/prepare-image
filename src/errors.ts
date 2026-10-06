@@ -1,6 +1,4 @@
 /**
- * La seule erreur levee par le paquet. Le code dit quoi faire.
- *
  * The only error thrown by the package. The code says what to do about it.
  */
 export class PrepareImageError extends Error {
