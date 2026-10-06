@@ -50,7 +50,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run --project unit",
     "test:browser": "vitest run --project browser",
     "test:all": "vitest run",
@@ -63,11 +63,20 @@
   "publishConfig": {
     "access": "public"
   },
+  "tsdown": {
+    "entry": ["src/index.ts"],
+    "format": ["esm", "cjs"],
+    "dts": true,
+    "sourcemap": true,
+    "clean": true,
+    "target": "es2022",
+    "fixedExtension": false
+  },
   "devDependencies": {
     "@vitest/browser": "^5.0.2",
     "@vitest/browser-playwright": "^5.0.2",
     "playwright": "^1.50.0",
-    "tsup": "^8.5.1",
+    "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.2"
   }

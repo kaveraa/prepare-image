@@ -15,7 +15,7 @@ npm install
 npx playwright install chromium
 ```
 
-Il faut Node.js 20 ou plus. Chromium sert aux tests qui ont besoin d'un vrai canevas.
+Il faut Node.js 22 ou plus. Chromium sert aux tests qui ont besoin d'un vrai canevas.
 
 ### 2. Créer une branche
 
@@ -77,7 +77,7 @@ npm install
 npx playwright install chromium
 ```
 
-You need Node.js 20 or more. Chromium is used by the tests that need a real canvas.
+You need Node.js 22 or more. Chromium is used by the tests that need a real canvas.
 
 ### 2. Create a branch
 
