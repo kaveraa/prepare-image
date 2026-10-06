@@ -19,7 +19,7 @@ import {
   SCAN_DATA,
 } from './fixtures'
 
-/** Position de la premiere occurrence d'un marqueur de deux octets, ou -1. */
+/** Position of the first occurrence of a two-byte marker, or -1. */
 function indexOfMarker(haystack: Uint8Array, first: number, second: number): number {
   for (let i = 0; i + 1 < haystack.length; i += 1) {
     if (haystack[i] === first && haystack[i + 1] === second) return i
@@ -89,11 +89,11 @@ describe('stripMetadata on JPEG', () => {
   it('returns null rather than risk a broken file', () => {
     expect(stripMetadata(new Uint8Array(0), 'jpeg')).toBeNull()
     expect(stripMetadata(ascii('not a jpeg'), 'jpeg')).toBeNull()
-    // Longueur de segment mensongere.
+    // Lying segment length.
     expect(stripMetadata(concat([bytes(0xff, 0xd8, 0xff, 0xe1, 0xff, 0xff), ascii('Exif')]), 'jpeg')).toBeNull()
-    // Aucune donnee compressee : ce n'est pas une image.
+    // No compressed data: this is not an image.
     expect(stripMetadata(concat([bytes(0xff, 0xd8), bytes(0xff, 0xd9)]), 'jpeg')).toBeNull()
-    // Tronque en plein milieu.
+    // Cut off in the middle.
     const cut = jpeg({ app1: exifPayload({ orientation: 3 }) }).subarray(0, 20)
     expect(stripMetadata(cut, 'jpeg')).toBeNull()
   })
@@ -157,12 +157,12 @@ describe('stripMetadata on PNG', () => {
   it('returns null on a broken PNG', () => {
     expect(stripMetadata(new Uint8Array(0), 'png')).toBeNull()
     expect(stripMetadata(dirty.subarray(0, 30), 'png')).toBeNull()
-    // Sans IEND on ne sait pas ou le fichier s'arrete.
+    // Without IEND we do not know where the file ends.
     expect(stripMetadata(png([['IHDR', IHDR_DATA], idat]), 'png')).toBeNull()
   })
 })
 
-/** Position de la premiere occurrence d'un petit texte ASCII, ou -1. */
+/** Position of the first occurrence of a short ASCII text, or -1. */
 function indexOfText(haystack: Uint8Array, text: string): number {
   const needle = ascii(text)
   for (let i = 0; i + needle.length <= haystack.length; i += 1) {
@@ -190,7 +190,7 @@ describe('stripMetadata on WebP', () => {
     ])
     const clean = stripMetadata(dirty, 'webp')
 
-    // Les drapeaux EXIF et XMP du VP8X sont eteints, le reste est identique.
+    // The EXIF and XMP flags of the VP8X are cleared, the rest is identical.
     expect(clean).toEqual(webp([['VP8X', vp8xData(0x00)], vp8]))
   })
 
@@ -198,7 +198,7 @@ describe('stripMetadata on WebP', () => {
     const dirty = webp([['VP8X', vp8xData(0x1c)], vp8, ['EXIF', tiffBlock({ orientation: 1 })]])
     const clean = stripMetadata(dirty, 'webp')
 
-    // 0x10 est le drapeau alpha : il survit.
+    // 0x10 is the alpha flag: it survives.
     expect(clean).toEqual(webp([['VP8X', vp8xData(0x10)], vp8]))
   })
 

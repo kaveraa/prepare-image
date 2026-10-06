@@ -1,15 +1,15 @@
 /**
- * Retrait des metadonnees sans toucher aux pixels : on recopie le fichier en
- * laissant tomber les morceaux qui portent de l'EXIF, du XMP, de l'IPTC ou des
- * commentaires, et on garde tout le reste octet pour octet.
+ * Metadata removal without touching the pixels: we copy the file and drop
+ * the chunks that carry EXIF, XMP, IPTC or comments, and we keep everything
+ * else byte for byte.
  *
- * Regle : au moindre doute sur la structure, on rend `null`. Un fichier casse
- * serait pire qu'une metadonnee laissee.
+ * Rule: at the first doubt about the structure, we return `null`. A broken
+ * file would be worse than a metadata left behind.
  */
 
 import type { ImageKind } from './detect'
 
-/** Un intervalle a recopier tel quel, de `start` inclus a `end` exclu. */
+/** A range to copy as is, from `start` inclusive to `end` exclusive. */
 type Range = [number, number]
 
 function at(bytes: Uint8Array, offset: number): number {
@@ -42,7 +42,7 @@ function matches(bytes: Uint8Array, offset: number, text: string): boolean {
   return true
 }
 
-/** Colle bout a bout les intervalles gardes. */
+/** Joins the kept ranges end to end. */
 function joinRanges(bytes: Uint8Array, ranges: Range[]): Uint8Array {
   let total = 0
   for (const range of ranges) total += range[1] - range[0]
@@ -56,10 +56,10 @@ function joinRanges(bytes: Uint8Array, ranges: Range[]): Uint8Array {
 }
 
 /**
- * JPEG : on recopie les segments en sautant APP1 a APP15 et le commentaire.
- * L'APP0 JFIF reste (il porte la densite), ainsi que tous les segments de
- * l'image (DQT, DHT, SOF, SOS). Apres SOS viennent les donnees compressees :
- * on recopie jusqu'a la fin sans plus chercher de marqueur.
+ * JPEG: we copy the segments and skip APP1 to APP15 and the comment.
+ * The APP0 JFIF stays (it carries the density), as well as all the image
+ * segments (DQT, DHT, SOF, SOS). After SOS comes the compressed data:
+ * we copy up to the end without looking for any more markers.
  */
 function stripJpeg(bytes: Uint8Array): Uint8Array | null {
   const length = bytes.length
@@ -76,13 +76,13 @@ function stripJpeg(bytes: Uint8Array): Uint8Array | null {
     if (markerAt >= length) return null
     const marker = at(bytes, markerAt)
 
-    // Marqueurs isoles, sans longueur : recopies tels quels.
+    // Standalone markers, without a length: copied as is.
     if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
       ranges.push([offset, markerAt + 1])
       offset = markerAt + 1
       continue
     }
-    // Fin d'image : on recopie ce qui reste et on s'arrete.
+    // End of image: we copy what is left and stop.
     if (marker === 0xd9) {
       ranges.push([offset, length])
       offset = length
@@ -95,7 +95,7 @@ function stripJpeg(bytes: Uint8Array): Uint8Array | null {
     const segmentEnd = markerAt + 1 + segmentLength
     if (segmentEnd > length) return null
 
-    // Debut du balayage : l'en-tete SOS puis tout le reste du fichier, tel quel.
+    // Start of scan: the SOS header then all the rest of the file, as is.
     if (marker === 0xda) {
       ranges.push([offset, length])
       sawScan = true
@@ -103,28 +103,28 @@ function stripJpeg(bytes: Uint8Array): Uint8Array | null {
       break
     }
 
-    // APP2 porte le profil ICC : ce n'est pas une donnee personnelle, c'est ce
-    // qui decide des couleurs. Le retirer ferait derailler les teintes d'une
-    // photo en gamut large, pour rien. On le garde, comme l'APP0 JFIF.
+    // APP2 carries the ICC profile: it is not personal data, it is what
+    // decides the colours. Removing it would break the tints of a wide-gamut
+    // photo, for nothing. We keep it, like the APP0 JFIF.
     const isAppToDrop = marker >= 0xe1 && marker <= 0xef && marker !== 0xe2
     const isComment = marker === 0xfe
     if (!isAppToDrop && !isComment) ranges.push([offset, segmentEnd])
     offset = segmentEnd
   }
 
-  // Sans donnees compressees, ce n'est pas une image lisible : on ne s'en mele pas.
+  // Without compressed data, this is not a readable image: we leave it alone.
   if (!sawScan) return null
   return joinRanges(bytes, ranges)
 }
 
-/** Les morceaux PNG qui portent des metadonnees et rien d'autre. */
+/** The PNG chunks that carry metadata and nothing else. */
 const PNG_DROP = ['eXIf', 'tEXt', 'iTXt', 'zTXt', 'tIME']
 
 /**
- * PNG : on recopie les morceaux en sautant ceux qui ne portent que des
- * metadonnees. Tout le reste passe, morceaux critiques comme morceaux de rendu
- * (gAMA, cHRM, sRGB, iCCP, pHYs, tRNS, bKGD, sBIT) : leurs CRC sont deja bons,
- * on les recopie sans y toucher.
+ * PNG: we copy the chunks and skip those that carry only metadata.
+ * Everything else goes through, critical chunks as well as rendering chunks
+ * (gAMA, cHRM, sRGB, iCCP, pHYs, tRNS, bKGD, sBIT): their CRCs are already
+ * right, we copy them without touching them.
  */
 function stripPng(bytes: Uint8Array): Uint8Array | null {
   const length = bytes.length
@@ -136,7 +136,7 @@ function stripPng(bytes: Uint8Array): Uint8Array | null {
 
   while (offset + 12 <= length) {
     const size = u32be(bytes, offset)
-    // Longueur qui ne tient pas dans ce qui reste : structure douteuse.
+    // Length that does not fit in what is left: doubtful structure.
     if (size > length - offset - 12) return null
     const type = fourcc(bytes, offset + 4)
     const end = offset + 12 + size
@@ -153,14 +153,14 @@ function stripPng(bytes: Uint8Array): Uint8Array | null {
   return joinRanges(bytes, ranges)
 }
 
-/** Drapeaux du morceau VP8X : bit 3 pour l'EXIF, bit 2 pour le XMP. */
+/** Flags of the VP8X chunk: bit 3 for EXIF, bit 2 for XMP. */
 const VP8X_EXIF_FLAG = 0x08
 const VP8X_XMP_FLAG = 0x04
 
 /**
- * WebP : conteneur RIFF, on retire les morceaux `EXIF` et `XMP `, on corrige la
- * taille annoncee par l'en-tete RIFF, et on eteint les drapeaux correspondants
- * dans VP8X (sinon un lecteur strict chercherait des morceaux disparus).
+ * WebP: RIFF container, we remove the `EXIF` and `XMP ` chunks, fix the size
+ * declared by the RIFF header, and clear the matching flags in VP8X
+ * (otherwise a strict reader would look for chunks that are gone).
  */
 function stripWebp(bytes: Uint8Array): Uint8Array | null {
   const length = bytes.length
@@ -175,8 +175,8 @@ function stripWebp(bytes: Uint8Array): Uint8Array | null {
     const type = fourcc(bytes, offset)
     const size = u32le(bytes, offset + 4)
     if (size > length - offset - 8) return null
-    // Les morceaux RIFF sont alignes sur un nombre pair d'octets ; le dernier
-    // octet de bourrage manque parfois en fin de fichier, on borne donc.
+    // RIFF chunks are aligned on an even number of bytes; the last padding
+    // byte is sometimes missing at the end of the file, so we clamp.
     const end = Math.min(offset + 8 + size + (size % 2), length)
 
     if (type === 'EXIF' || type === 'XMP ') {
@@ -197,7 +197,7 @@ function stripWebp(bytes: Uint8Array): Uint8Array | null {
   out.set(bytes.subarray(0, 12), 0)
   out.set(joinRanges(bytes, ranges), 12)
 
-  // Taille RIFF : tout le fichier moins les huit octets de l'en-tete.
+  // RIFF size: the whole file minus the eight bytes of the header.
   const riffSize = out.length - 8
   out[4] = riffSize & 0xff
   out[5] = (riffSize >>> 8) & 0xff
@@ -205,7 +205,7 @@ function stripWebp(bytes: Uint8Array): Uint8Array | null {
   out[7] = (riffSize >>> 24) & 0xff
 
   if (vp8xFlagsAt >= 0) {
-    // Le VP8X garde, s'il existe, est le premier morceau recopie.
+    // The kept VP8X, if any, is the first chunk copied.
     const first = ranges[0]
     if (first !== undefined && first[0] === vp8xFlagsAt - 8) {
       const flagsAt = 12 + 8
@@ -217,9 +217,6 @@ function stripWebp(bytes: Uint8Array): Uint8Array | null {
 }
 
 /**
- * Retire les metadonnees sans toucher aux pixels. Rend `null` quand le format
- * ne se traite pas ainsi : l'appelant reencodera.
- *
  * Removes metadata without touching the pixels. Returns `null` when the format
  * cannot be handled this way: the caller will re-encode instead.
  */
@@ -237,8 +234,8 @@ export function stripMetadata(bytes: Uint8Array, kind: ImageKind): Uint8Array | 
     case 'tiff':
     case 'bmp':
     case 'unknown':
-      // GIF et BMP ne portent presque jamais d'EXIF ; HEIC, AVIF et TIFF
-      // demanderaient de reecrire le conteneur, ce qui risquerait l'image.
+      // GIF and BMP almost never carry EXIF; HEIC, AVIF and TIFF would need
+      // the container rewritten, which would put the image at risk.
       return null
   }
 }

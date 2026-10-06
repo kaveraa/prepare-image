@@ -5,8 +5,8 @@ import type { DecodedImage, EncodeOptions, Format, Imaging, Orientation } from '
 import { IDAT_DATA, IHDR_DATA, exifPayload, ftyp, jpeg, png } from './fixtures'
 
 /**
- * Un faux jeu d'operations d'image : il permet de verifier tout l'enchainement
- * sous Node, sans navigateur. Le vrai canevas a ses propres tests.
+ * A fake set of image operations: it lets us check the whole chain under
+ * Node, without a browser. The real canvas has its own tests.
  */
 function fakeImaging(
   options: {
@@ -95,7 +95,7 @@ describe('prepareImage', () => {
     const ready = await prepareImage(fileOf(source, 'holiday.jpg', 'image/jpeg'), { imaging })
 
     expect(ready.changed).toEqual(['metadata-removed'])
-    // Aucun encodage : les pixels n'ont pas ete retouches.
+    // No encoding: the pixels were not touched.
     expect(imaging.encodes).toHaveLength(0)
     expect(ready.bytes).toBeLessThan(source.byteLength)
 

@@ -57,7 +57,7 @@ describe('sniff', () => {
   it('finds the ftyp box when it is not the first box', () => {
     const file = concat([isoBox('free', new Uint8Array(12)), ftyp('heic', ['mif1']), isoBox('mdat', new Uint8Array(4))])
 
-    // La boite ftyp est bien ailleurs qu'a l'offset 4.
+    // The ftyp box is indeed somewhere else than at offset 4.
     expect(file.subarray(4, 8)).not.toEqual(ascii('ftyp'))
     expect(sniff(file)).toBe('heic')
   })
@@ -74,8 +74,8 @@ describe('sniff', () => {
   })
 
   it('recognises a HEIC from the first 64 bytes only', () => {
-    // `looksLikeHeic()` ne lit que le debut du fichier pour ne charger un
-    // decodeur que lorsqu'il sert : sniff doit s'en contenter.
+    // `looksLikeHeic()` reads only the start of the file, to load a decoder
+    // only when it is needed: sniff must make do with that.
     const file = concat([ftyp('heic', ['mif1', 'miaf']), isoBox('mdat', new Uint8Array(4096))])
 
     expect(sniff(file.subarray(0, 64))).toBe('heic')
@@ -101,8 +101,8 @@ describe('sniff', () => {
   })
 
   it('reads the bytes, not the extension: a renamed file keeps its real kind', () => {
-    // Un PNG renomme en .jpg garde ses octets d'origine ; rien dans sniff ne
-    // regarde le nom, et c'est justement le point.
+    // A PNG renamed to .jpg keeps its original bytes; nothing in sniff
+    // looks at the name, and that is exactly the point.
     const renamed = png([
       ['IHDR', IHDR_DATA],
       ['IEND', new Uint8Array(0)],

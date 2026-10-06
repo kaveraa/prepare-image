@@ -1,13 +1,10 @@
 /**
- * De quoi fabriquer et relire des images dans le test lui-meme, sans fichier
- * joint : un canevas ecrit l'image, un autre la relit pixel par pixel.
- *
  * Test helpers: build images with a canvas, read them back pixel by pixel.
  */
 
 export type Rgba = readonly [number, number, number, number]
 
-/** Un canevas de travail pour les tests. */
+/** A working canvas for the tests. */
 export function testSurface(width: number, height: number): {
   canvas: OffscreenCanvas
   ctx: OffscreenCanvasRenderingContext2D
@@ -18,7 +15,7 @@ export function testSurface(width: number, height: number): {
   return { canvas, ctx }
 }
 
-/** Dessine une image et rend le Blob encode. */
+/** Draws an image and returns the encoded Blob. */
 export async function drawToBlob(
   width: number,
   height: number,
@@ -31,7 +28,7 @@ export async function drawToBlob(
   return await canvas.convertToBlob({ type, quality })
 }
 
-/** Les quatre quadrants, chacun d'une couleur franche. */
+/** The four quadrants, each in a plain colour. */
 export function drawQuadrants(
   ctx: OffscreenCanvasRenderingContext2D,
   width: number,
@@ -49,7 +46,7 @@ export function drawQuadrants(
   ctx.fillRect(halfWidth, halfHeight, halfWidth, halfHeight)
 }
 
-/** Les pixels d'un Blob image, relus a travers un canevas neutre. */
+/** The pixels of an image Blob, read back through a neutral canvas. */
 export class Pixels {
   readonly width: number
   readonly height: number
@@ -80,7 +77,7 @@ export class Pixels {
     ]
   }
 
-  /** La couleur moyenne d'une zone, alpha compris. */
+  /** The average colour of an area, alpha included. */
   average(x: number, y: number, width: number, height: number): Rgba {
     let red = 0
     let green = 0
@@ -100,7 +97,7 @@ export class Pixels {
   }
 }
 
-/** Ecart maximum entre deux couleurs, canal par canal. */
+/** Maximum gap between two colours, channel by channel. */
 export function colorDistance(left: Rgba, right: Rgba): number {
   let worst = 0
   for (let channel = 0; channel < 4; channel += 1) {
@@ -110,11 +107,9 @@ export function colorDistance(left: Rgba, right: Rgba): number {
 }
 
 /**
- * Glisse un segment EXIF (APP1) portant une orientation dans un JPEG, juste
- * apres le marqueur de debut. Les octets sont assembles a la main : entete
- * TIFF gros-boutien, une seule entree, le champ Orientation (0x0112).
- *
- * Insert an EXIF APP1 segment carrying an orientation into a JPEG.
+ * Inserts an EXIF APP1 segment carrying an orientation into a JPEG, right
+ * after the start marker. The bytes are built by hand: big-endian TIFF
+ * header, a single entry, the Orientation field (0x0112).
  */
 export function withExifOrientation(
   jpeg: Uint8Array,
@@ -122,19 +117,19 @@ export function withExifOrientation(
 ): Uint8Array<ArrayBuffer> {
   const segment = new Uint8Array(36)
   const view = new DataView(segment.buffer)
-  view.setUint16(0, 0xffe1) // marqueur APP1
-  view.setUint16(2, 34) // longueur du segment, champ de longueur compris
+  view.setUint16(0, 0xffe1) // APP1 marker
+  view.setUint16(2, 34) // segment length, length field included
   segment.set([0x45, 0x78, 0x69, 0x66, 0x00, 0x00], 4) // "Exif\0\0"
-  view.setUint16(10, 0x4d4d) // "MM" : gros-boutien
-  view.setUint16(12, 0x002a) // nombre magique TIFF
-  view.setUint32(14, 8) // decalage de l'IFD0
-  view.setUint16(18, 1) // une entree
+  view.setUint16(10, 0x4d4d) // "MM": big-endian
+  view.setUint16(12, 0x002a) // TIFF magic number
+  view.setUint32(14, 8) // offset of the IFD0
+  view.setUint16(18, 1) // one entry
   view.setUint16(20, 0x0112) // Orientation
   view.setUint16(22, 3) // type SHORT
-  view.setUint32(24, 1) // un element
+  view.setUint32(24, 1) // one element
   view.setUint16(28, orientation)
-  view.setUint16(30, 0) // bourrage
-  view.setUint32(32, 0) // pas d'IFD suivant
+  view.setUint16(30, 0) // padding
+  view.setUint32(32, 0) // no next IFD
 
   const out = new Uint8Array(jpeg.length + segment.length)
   out.set(jpeg.subarray(0, 2), 0)
@@ -143,7 +138,7 @@ export function withExifOrientation(
   return out
 }
 
-/** Un JPEG dessine puis marque d'une orientation EXIF. */
+/** A drawn JPEG then tagged with an EXIF orientation. */
 export async function jpegWithOrientation(
   width: number,
   height: number,
