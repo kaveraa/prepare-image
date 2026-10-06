@@ -1,7 +1,4 @@
 /**
- * Les operations d'image dans un vrai Chromium : decodage, redimensionnement,
- * transparence, formats, qualite, liberation.
- *
  * The image operations inside a real Chromium.
  */
 
@@ -78,7 +75,7 @@ describe('encode', () => {
   })
 
   it('lays the requested background under a transparent png turned into a jpeg', async () => {
-    // Un png entierement transparent : sans fond, le jpeg sortirait noir.
+    // A fully transparent png: without a background, the jpeg would come out black.
     const source = await drawToBlob(60, 60, (ctx) => ctx.clearRect(0, 0, 60, 60))
     const image = await imaging.decode(source, 1)
     let out: Blob
@@ -143,7 +140,7 @@ describe('encode', () => {
   })
 
   it('makes a lighter file at a lower quality', async () => {
-    // Une image bruitee : un aplat se compresserait pareil aux deux qualites.
+    // A noisy image: a flat colour would compress the same at both qualities.
     const source = await drawToBlob(400, 400, (ctx) => {
       const image = ctx.createImageData(400, 400)
       let seed = 1
@@ -179,10 +176,10 @@ describe('encode', () => {
   })
 
   it('keeps the average color when shrinking 2000x1500 down to 200x150', async () => {
-    // Des bandes de 5 pixels, soit une periode de 10, exactement le pas
-    // d'echantillonnage d'une reduction par dix : un agrandissement au plus
-    // proche voisin retomberait toujours sur la bande rouge et rendrait une
-    // image entierement rouge. Un vrai filtrage garde le violet moyen.
+    // Stripes of 5 pixels, so a period of 10, exactly the sampling step
+    // of a reduction by ten: a nearest-neighbour pick would always land on
+    // the red stripe and return a fully red image. Real filtering keeps
+    // the average purple.
     const source = await drawToBlob(2000, 1500, (ctx) => {
       for (let x = 0; x < 2000; x += 10) {
         ctx.fillStyle = '#ff0000'

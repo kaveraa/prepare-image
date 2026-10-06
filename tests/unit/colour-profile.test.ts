@@ -4,9 +4,9 @@ import { stripMetadata } from '../../src/strip'
 import { ascii, concat, exifPayload, jpeg, png, IDAT_DATA, IHDR_DATA } from './fixtures'
 
 /**
- * Le profil ICC dit quelles couleurs afficher. Ce n'est pas une donnee
- * personnelle, et le retirer ferait derailler les teintes d'une photo en gamut
- * large. Il doit donc traverser le nettoyage intact.
+ * The ICC profile says which colours to display. It is not personal data,
+ * and removing it would break the tints of a wide-gamut photo. So it must
+ * go through the cleanup untouched.
  */
 const ICC = concat([ascii('ICC_PROFILE\0'), new Uint8Array([0x01, 0x01]), new Uint8Array(24)])
 
@@ -26,14 +26,14 @@ describe('the colour profile', () => {
     expect(after.hasLocation).toBe(false)
     expect(after.orientation).toBe(1)
 
-    // Le profil est toujours la, entier.
+    // The profile is still there, whole.
     expect(indexOfBytes(cleaned as Uint8Array, ascii('ICC_PROFILE'))).toBeGreaterThan(0)
   })
 
   it('is not a reason to clean a file that has nothing else', () => {
     const file = jpeg({ app2: ICC })
 
-    // Rien a retirer : le paquet ne doit pas annoncer un nettoyage qui n'a pas lieu.
+    // Nothing to remove: the package must not announce a cleanup that does not happen.
     expect(readMetadata(file, 'jpeg').hasMetadata).toBe(false)
 
     const cleaned = stripMetadata(file, 'jpeg')

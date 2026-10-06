@@ -19,10 +19,6 @@ const DEFAULT_QUALITY = 0.82
 const DEFAULT_BACKGROUND = '#ffffff'
 
 /**
- * Prend le fichier que la personne vient de choisir et rend une image prete a
- * etre envoyee : lisible par tous les navigateurs, droite, a la bonne taille,
- * et debarrassee des metadonnees.
- *
  * Takes the file someone just picked and returns an image ready to upload:
  * readable everywhere, upright, the right size, and free of metadata.
  */
@@ -42,8 +38,8 @@ export async function prepareImage(input: Blob, options: PrepareOptions = {}): P
   let meta = readMetadata(bytes, kind)
   const changed: Change[] = []
 
-  // On essaie d'abord le navigateur seul : Safari lit le HEIC sans aide, et
-  // cela evite de charger un decodeur pour rien.
+  // Try the browser alone first: Safari reads HEIC without help, and this
+  // avoids loading a decoder for nothing.
   let image: DecodedImage
 
   try {
@@ -86,8 +82,8 @@ export async function prepareImage(input: Blob, options: PrepareOptions = {}): P
       orientation: meta.orientation,
     }
 
-    // Rien a changer sur les pixels : on se contente de retirer les
-    // metadonnees, sans reencoder, donc sans perte de qualite.
+    // Nothing to change on the pixels: we only remove the metadata,
+    // without re-encoding, so without any loss of quality.
     if (options.alwaysReencode !== true && !resized && !converted && !rotated) {
       const cleaned = meta.hasMetadata ? stripMetadata(bytes, kind) : bytes
 
@@ -117,7 +113,7 @@ export async function prepareImage(input: Blob, options: PrepareOptions = {}): P
     const quality = clampQuality(options.quality ?? DEFAULT_QUALITY)
     const background = options.background ?? DEFAULT_BACKGROUND
 
-    // Le PNG ne connait pas la qualite : inutile de reessayer plus bas.
+    // PNG has no quality setting: no point in trying lower.
     const ladder =
       options.maxBytes !== undefined && format !== 'png' ? qualitySteps(quality) : [quality]
 
@@ -129,7 +125,7 @@ export async function prepareImage(input: Blob, options: PrepareOptions = {}): P
       try {
         out = await imaging.encode(image, { ...target, format, quality: step, background })
       } catch (error) {
-        // Toutes les erreurs du paquet portent un code : celles du canevas aussi.
+        // Every error of the package carries a code: the canvas ones too.
         throw error instanceof PrepareImageError ? error : PrepareImageError.cannotEncode(format, error)
       }
 
@@ -175,10 +171,8 @@ export async function prepareImage(input: Blob, options: PrepareOptions = {}): P
 }
 
 /**
- * Le fichier est-il une photo HEIC ? Lit seulement les premiers octets, ce qui
- * permet de ne charger un decodeur que lorsqu'il sert vraiment.
- *
- * Is this file a HEIC photo? Reads the first bytes only.
+ * Is this file a HEIC photo? Reads the first bytes only, so a decoder is
+ * loaded only when it is really needed.
  */
 export async function looksLikeHeic(blob: Blob): Promise<boolean> {
   const head = new Uint8Array(await blob.slice(0, 64).arrayBuffer())

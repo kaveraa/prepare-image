@@ -1,9 +1,4 @@
 /**
- * Les operations d'image du navigateur : decodage, rotation, redimensionnement,
- * encodage. Aucune dependance. Le fichier tourne aussi dans un Web Worker :
- * `document` n'est touche que dans les chemins de repli, et seulement apres
- * avoir verifie qu'il existe.
- *
  * The browser image operations: decode, rotate, resize, encode. No dependency,
  * and worker safe: `document` is only read in fallback paths, after a guard.
  */
@@ -11,14 +6,10 @@
 import type { DecodedImage, EncodeOptions, Format, Imaging, Orientation } from './types'
 
 /**
- * Un JPEG de 2x1 pixels (gauche rouge, droite bleu) portant l'orientation 6 en
- * EXIF. Affiche droit, il mesure donc 1x2 : largeur et hauteur echangees. Il
- * sert de temoin pour savoir si le navigateur honore vraiment l'option
- * `imageOrientation: 'from-image'`, car certains moteurs l'ignorent en silence
- * au lieu de lever une erreur.
- *
- * A 2x1 JPEG tagged with EXIF orientation 6, so an engine that applies the
- * orientation reports 1x2. Used to probe `imageOrientation: 'from-image'`.
+ * A 2x1 JPEG (left red, right blue) tagged with EXIF orientation 6. Shown
+ * upright it measures 1x2: width and height swapped. It is used to probe
+ * whether the browser really honours `imageOrientation: 'from-image'`, as
+ * some engines silently ignore it instead of throwing.
  */
 const PROBE_JPEG_BASE64 =
   '/9j/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAYAAAAAAAD/2wBDABALDA4MChAODQ4SERAT' +
@@ -28,30 +19,30 @@ const PROBE_JPEG_BASE64 =
   'AAAAAAAAAAAAAAAAAQIDM3Kx/8QAFQEBAQAAAAAAAAAAAAAAAAAAAwb/xAAZEQABBQAAAAAAAAAA' +
   'AAAAAAAAAQIDM3H/2gAMAwEAAhEDEQA/AJC9mr2noC3gqbiAzWO1T//Z'
 
-/** Le type MIME de chaque format. */
+/** The MIME type of each format. */
 const MIME: Record<Format, string> = {
   webp: 'image/webp',
   jpeg: 'image/jpeg',
   png: 'image/png',
 }
 
-/** Les formats qui gardent la transparence. Le JPEG, non. */
+/** The formats that keep transparency. JPEG does not. */
 const KEEPS_ALPHA: Record<Format, boolean> = {
   webp: true,
   png: true,
   jpeg: false,
 }
 
-/** Tout ce que `drawImage` sait dessiner ici. */
+/** Everything `drawImage` can draw here. */
 type DrawSource = ImageBitmap | HTMLImageElement | HTMLCanvasElement | OffscreenCanvas
 
-/** Un canevas et son contexte, quelle que soit sa sorte. */
+/** A canvas and its context, whatever its kind. */
 interface Surface {
   readonly canvas: HTMLCanvasElement | OffscreenCanvas
   readonly ctx: CanvasRenderingContext2D
 }
 
-/** Les orientations 5 a 8 font un quart de tour : elles echangent les cotes. */
+/** Orientations 5 to 8 are a quarter turn: they swap the sides. */
 function swapsAxes(orientation: Orientation): boolean {
   return orientation >= 5
 }
@@ -65,7 +56,7 @@ function toSize(value: number): number {
   return Math.max(1, Math.round(value))
 }
 
-/** Le JPEG temoin, en Blob. */
+/** The probe JPEG, as a Blob. */
 function probeBlob(): Blob {
   const binary = atob(PROBE_JPEG_BASE64)
   const bytes = new Uint8Array(binary.length)
@@ -74,15 +65,15 @@ function probeBlob(): Blob {
 }
 
 /**
- * Un canevas de travail. `OffscreenCanvas` d'abord : il n'occupe pas le fil
- * principal et existe dans un Worker. Sinon un `<canvas>` du document.
+ * A working canvas. `OffscreenCanvas` first: it does not block the main
+ * thread and exists in a Worker. Otherwise a `<canvas>` of the document.
  */
 function createSurface(width: number, height: number): Surface {
   if (typeof OffscreenCanvas === 'function') {
     const canvas = new OffscreenCanvas(width, height)
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('prepare-image: no 2d context on the offscreen canvas')
-    // Les deux contextes 2d partagent la meme surface d'API ; on aligne les types.
+    // Both 2d contexts share the same API surface; we align the types.
     return { canvas, ctx: ctx as unknown as CanvasRenderingContext2D }
   }
   if (typeof document === 'undefined') {
@@ -96,7 +87,7 @@ function createSurface(width: number, height: number): Surface {
   return { canvas, ctx }
 }
 
-/** Encode un canevas, avec `convertToBlob()` quand c'est possible. */
+/** Encodes a canvas, with `convertToBlob()` when possible. */
 async function surfaceToBlob(
   canvas: HTMLCanvasElement | OffscreenCanvas,
   type: string,
@@ -109,14 +100,14 @@ async function surfaceToBlob(
   const blob = await new Promise<Blob | null>((resolve) => {
     element.toBlob(resolve, type, quality)
   })
-  // Un canevas qui rend `null` veut dire, en pratique, un format refuse.
+  // A canvas returning `null` means, in practice, a refused format.
   if (!blob) throw new Error(`prepare-image: the canvas returned nothing for ${type}`)
   return blob
 }
 
 /**
- * Pose la rotation (et le miroir) d'une orientation EXIF sur le contexte.
- * `width` et `height` sont les cotes vus apres rotation.
+ * Applies the rotation (and the mirror) of an EXIF orientation to the context.
+ * `width` and `height` are the sides seen after rotation.
  */
 function applyOrientation(
   ctx: CanvasRenderingContext2D,
@@ -152,20 +143,17 @@ function applyOrientation(
 }
 
 /**
- * Une image decodee, prete a etre dessinee. `width` et `height` sont toujours
- * les cotes vus a l'ecran, quart de tour compris.
- *
  * A decoded image ready to be drawn. Its size is always the displayed one.
  */
 class CanvasImage implements DecodedImage {
   readonly width: number
   readonly height: number
 
-  /** La source dessinable, ou `null` une fois fermee. */
+  /** The drawable source, or `null` once closed. */
   #source: DrawSource | null
-  /** La rotation qui reste a poser au dessin ; 1 si le navigateur l'a deja faite. */
+  /** The rotation still to apply when drawing; 1 if the browser already did it. */
   #pending: Orientation
-  /** L'URL d'objet a liberer, s'il y en a une. */
+  /** The object URL to release, if there is one. */
   #objectUrl: string | null
 
   constructor(
@@ -182,14 +170,14 @@ class CanvasImage implements DecodedImage {
     this.#objectUrl = objectUrl
   }
 
-  /** De quoi dessiner : la source et la rotation restante. Leve si l'image est fermee. */
+  /** What to draw: the source and the remaining rotation. Throws if the image is closed. */
   take(): { source: DrawSource; pending: Orientation } {
     const source = this.#source
     if (!source) throw new Error('prepare-image: this image was already closed with close()')
     return { source, pending: this.#pending }
   }
 
-  /** Libere la memoire. Un second appel ne fait rien et ne leve pas. */
+  /** Frees the memory. A second call does nothing and does not throw. */
   close(): void {
     const source = this.#source
     this.#source = null
@@ -202,7 +190,7 @@ class CanvasImage implements DecodedImage {
   }
 }
 
-/** Charge un `HTMLImageElement` depuis une URL. */
+/** Loads an `HTMLImageElement` from a URL. */
 function loadImageElement(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image()
@@ -213,21 +201,19 @@ function loadImageElement(url: string): Promise<HTMLImageElement> {
 }
 
 /**
- * La fabrique. Chaque instance garde ses propres reponses de temoin et de
- * `supports()`, pour que rien ne fuite d'un test a l'autre.
- *
- * The factory. Each instance keeps its own probe and `supports()` answers.
+ * The factory. Each instance keeps its own probe and `supports()` answers,
+ * so that nothing leaks from one test to the next.
  */
 export function createBrowserImaging(): Imaging {
-  /** Temoin : `createImageBitmap` honore-t-il `imageOrientation: 'from-image'` ? */
+  /** Probe: does `createImageBitmap` honour `imageOrientation: 'from-image'`? */
   let bitmapProbe: Promise<boolean> | undefined
-  /** Temoin : un `HTMLImageElement` applique-t-il l'orientation du fichier ? */
+  /** Probe: does an `HTMLImageElement` apply the orientation of the file? */
   let elementProbe: Promise<boolean> | undefined
-  /** Une reponse par format, calculee une seule fois. */
+  /** One answer per format, computed only once. */
   const supportCache = new Map<Format, Promise<boolean>>()
 
   function bitmapAppliesOrientation(): Promise<boolean> {
-    // Un seul essai, garde pour toute la vie de l'instance.
+    // A single try, kept for the whole life of the instance.
     bitmapProbe ??= (async () => {
       try {
         const bitmap = await createImageBitmap(probeBlob(), { imageOrientation: 'from-image' })
@@ -261,11 +247,11 @@ export function createBrowserImaging(): Imaging {
 
   async function decodeWithBitmap(blob: Blob, orientation: Orientation): Promise<CanvasImage> {
     if (await bitmapAppliesOrientation()) {
-      // Le navigateur tourne lui-meme : les cotes rendus sont deja les bons.
+      // The browser rotates by itself: the returned sides are already right.
       const bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' })
       return new CanvasImage(bitmap, bitmap.width, bitmap.height, 1, null)
     }
-    // Sinon on garde les pixels tels quels et on tournera au moment du dessin.
+    // Otherwise we keep the pixels as is and rotate when drawing.
     const bitmap = await createImageBitmap(blob)
     const swap = swapsAxes(orientation)
     return new CanvasImage(
@@ -285,7 +271,7 @@ export function createBrowserImaging(): Imaging {
     const url = URL.createObjectURL(blob)
     try {
       const image = await loadImageElement(url)
-      // `naturalWidth` suit deja l'orientation quand le moteur l'applique.
+      // `naturalWidth` already follows the orientation when the engine applies it.
       if (applies) {
         return new CanvasImage(image, image.naturalWidth, image.naturalHeight, 1, url)
       }
@@ -304,8 +290,6 @@ export function createBrowserImaging(): Imaging {
   }
 
   /**
-   * Decode le fichier. L'image rendue est toujours droite.
-   *
    * Decode the file. The returned image is always upright.
    */
   async function decode(blob: Blob, orientation: Orientation): Promise<DecodedImage> {
@@ -313,16 +297,14 @@ export function createBrowserImaging(): Imaging {
       try {
         return await decodeWithBitmap(blob, orientation)
       } catch {
-        // Repli sur l'element image : certains moteurs refusent des fichiers
-        // que le `<img>` accepte quand meme.
+        // Fallback to the image element: some engines refuse files that
+        // the `<img>` still accepts.
       }
     }
     return await decodeWithElement(blob, orientation)
   }
 
   /**
-   * Dessine l'image a la taille demandee et l'encode.
-   *
    * Draw the image at the requested size and encode it.
    */
   async function encode(image: DecodedImage, options: EncodeOptions): Promise<Blob> {
@@ -337,7 +319,7 @@ export function createBrowserImaging(): Imaging {
     let currentWidth = image.width
     let currentHeight = image.height
 
-    // 1. Poser la rotation si le navigateur ne l'a pas faite.
+    // 1. Apply the rotation if the browser did not do it.
     if (pending !== 1) {
       const swap = swapsAxes(pending)
       const sourceWidth = swap ? image.height : image.width
@@ -348,13 +330,13 @@ export function createBrowserImaging(): Imaging {
       current = surface.canvas
     }
 
-    // 2. Descendre par moities successives tant que la reduction depasse un
-    //    facteur 2. Chromium filtre bien un gros ecart en un seul `drawImage`,
-    //    mais d'autres moteurs se contentent de quatre pixels voisins et
-    //    crenelent l'image. Deux moities coutent peu et lissent partout.
-    //    On prefere cette boucle a
-    //    `createImageBitmap(..., { resizeQuality: 'high' })` parce que tous les
-    //    moteurs ne suivent pas cette option, et l'ignorent sans rien dire.
+    // 2. Go down by successive halves while the reduction is above a
+    //    factor of 2. Chromium filters a big gap well in a single `drawImage`,
+    //    but other engines only use four neighbour pixels and produce
+    //    aliasing. Two halves cost little and smooth everywhere.
+    //    We prefer this loop to
+    //    `createImageBitmap(..., { resizeQuality: 'high' })` because not all
+    //    engines follow that option, and they ignore it without a word.
     while (currentWidth > width * 2 || currentHeight > height * 2) {
       const nextWidth = Math.max(width, Math.floor(currentWidth / 2))
       const nextHeight = Math.max(height, Math.floor(currentHeight / 2))
@@ -367,7 +349,7 @@ export function createBrowserImaging(): Imaging {
       currentHeight = nextHeight
     }
 
-    // 3. Le dessin final, sur le fond demande quand le format perd la transparence.
+    // 3. The final drawing, on the requested background when the format loses transparency.
     const target = createSurface(width, height)
     if (!KEEPS_ALPHA[options.format]) {
       target.ctx.fillStyle = options.background
@@ -386,8 +368,8 @@ export function createBrowserImaging(): Imaging {
         cause,
       })
     }
-    // Un moteur qui ne sait pas ecrire le WebP rend un PNG sans se plaindre :
-    // on verifie donc le type du blob, jamais la seule absence d'erreur.
+    // An engine that cannot write WebP returns a PNG without complaining:
+    // so we check the type of the blob, never just the absence of an error.
     if (blob.type !== type) {
       throw new Error(
         `prepare-image: the browser returned ${blob.type || 'an unknown type'} instead of ${type}`,
@@ -397,8 +379,6 @@ export function createBrowserImaging(): Imaging {
   }
 
   /**
-   * Le navigateur sait-il ecrire ce format ? Un seul essai par format, garde.
-   *
    * Can the browser write this format? Probed once per format, then cached.
    */
   function supports(format: Format): Promise<boolean> {
@@ -423,8 +403,6 @@ export function createBrowserImaging(): Imaging {
 }
 
 /**
- * L'implementation par defaut, partagee par tout le paquet.
- *
  * The default implementation, shared by the whole package.
  */
 export const browserImaging: Imaging = createBrowserImaging()
