@@ -58,7 +58,7 @@
     "prepublishOnly": "npm run typecheck && npm run test:all && npm run build"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "publishConfig": {
     "access": "public"
@@ -75,9 +75,9 @@
   "devDependencies": {
     "@vitest/browser": "^5.0.2",
     "@vitest/browser-playwright": "^5.0.2",
-    "playwright": "^1.50.0",
+    "playwright": "^1.64.0",
     "tsdown": "^0.23.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^5.0.2"
   }
 }
